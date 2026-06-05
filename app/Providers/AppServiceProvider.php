@@ -40,7 +40,7 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
-        if (request()->getHost() === 'dumuriadpo.sevalla.app') {
+        if (env('FORCE_HTTPS', true)) {
             \Illuminate\Support\Facades\URL::forceScheme('https');
         }
 
