@@ -1,0 +1,1 @@
+{"version":2,"defects":{"Tests\\Feature\\ApiAuthTest::test_api_login_returns_standard_response":7},"times":{"Tests\\Feature\\ApiAuthTest::test_api_login_returns_standard_response":0.495,"Tests\\Feature\\AuthTest::test_login_page_loads":0.012,"Tests\\Feature\\AuthTest::test_user_can_login":0.43}}
