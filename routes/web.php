@@ -53,3 +53,9 @@ Route::get('/clear-cache', function() {
     \Illuminate\Support\Facades\Artisan::call('optimize:clear');
     return 'Cache cleared successfully!';
 });
+
+Route::get('/setup-db', function() {
+    \Illuminate\Support\Facades\Artisan::call('migrate', ['--force' => true]);
+    \Illuminate\Support\Facades\Artisan::call('db:seed', ['--force' => true]);
+    return 'Database migrated and seeded successfully! You can now login with admin@dpoerp.test / password';
+});
