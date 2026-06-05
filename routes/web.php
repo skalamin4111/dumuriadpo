@@ -48,3 +48,8 @@ Route::middleware(['auth', 'active', 'tenant'])->group(function () {
     Route::resource('reports', ReportController::class)->only(['index', 'store']);
     Route::get('/settings', SettingsController::class)->name('settings');
 });
+
+Route::get('/clear-cache', function() {
+    \Illuminate\Support\Facades\Artisan::call('optimize:clear');
+    return 'Cache cleared successfully!';
+});
