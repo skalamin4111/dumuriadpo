@@ -319,6 +319,13 @@
                 
                 <div class="flex flex-col gap-4 surface p-4 sm:flex-row sm:items-center sm:justify-between">
                     <button type="button" @click="marketingLead = { id: null, name: '', phone: '', interested_course: '', duration: '', source: '', status: 'new', call_status: '', next_follow_up_at: '', notes: '', remarks: '' }" class="btn btn-primary shrink-0">Add New Student</button>
+                    <form method="POST" action="{{ route('computer-training.marketing.sync-google-sheet') }}" class="flex shrink-0">
+                        @csrf
+                        <button type="submit" class="btn bg-indigo-600 text-white hover:bg-indigo-700 shrink-0 gap-2 flex items-center" onclick="this.disabled=true; this.innerHTML='Syncing...'; this.form.submit();">
+                            <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
+                            Sync Google Sheet
+                        </button>
+                    </form>
                     <form method="POST" action="{{ route('computer-training.marketing.import') }}" enctype="multipart/form-data" class="flex flex-1 items-center justify-end gap-2">
                         @csrf
                         <input type="hidden" name="tab" value="marketing">

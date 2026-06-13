@@ -10,17 +10,17 @@
 </head>
 <body class="bg-slate-50 text-slate-900 antialiased dark:bg-slate-950 dark:text-slate-100">
     <div class="min-h-screen lg:grid lg:grid-cols-[17rem_1fr]">
-        <aside class="border-b border-slate-200 bg-white/95 backdrop-blur dark:border-slate-800 dark:bg-slate-900/95 lg:sticky lg:top-0 lg:min-h-screen lg:border-b-0 lg:border-r">
+        <aside x-data="{ mobileMenuOpen: false }" class="border-b border-slate-200 bg-white/95 backdrop-blur dark:border-slate-800 dark:bg-slate-900/95 lg:sticky lg:top-0 lg:min-h-screen lg:border-b-0 lg:border-r">
             <div class="flex h-16 items-center justify-between px-5">
                 <a href="{{ route('dashboard') }}" class="flex min-w-0 items-center gap-3 font-bold">
                     <span class="grid size-10 shrink-0 place-items-center rounded-md bg-teal-600 text-white shadow-sm">D</span>
                     <span class="truncate">DPO ERP</span>
                 </a>
-                <button class="btn btn-muted px-2.5 lg:hidden" x-on:click="$refs.nav.classList.toggle('max-lg:hidden')" title="Menu">
+                <button type="button" class="btn btn-muted px-2.5 lg:hidden" x-on:click="mobileMenuOpen = !mobileMenuOpen" title="Menu">
                     <svg class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
                 </button>
             </div>
-            <nav x-ref="nav" x-data="{ servicesOpen: true }" class="max-lg:hidden space-y-1 px-3 pb-5">
+            <nav x-data="{ servicesOpen: true }" x-bind:class="mobileMenuOpen ? 'block' : 'hidden lg:block'" class="space-y-1 px-3 pb-5">
                 @foreach ([
                     ['Dashboard', 'dashboard', 'dashboard', 'M4 13h6V4H4v9Zm0 7h6v-5H4v5Zm10 0h6v-9h-6v9Zm0-11h6V4h-6v5Z'],
                     ['Employees', 'employees.index', 'employees.*', 'M16 11c1.66 0 3-1.34 3-3S17.66 5 16 5s-3 1.34-3 3 1.34 3 3 3ZM8 11c1.66 0 3-1.34 3-3S9.66 5 8 5 5 6.34 5 8s1.34 3 3 3Zm0 2c-2.67 0-5 1.34-5 3v2h10v-2c0-1.66-2.33-3-5-3Zm8 0c-.32 0-.63.02-.94.07 1.18.85 1.94 1.95 1.94 3.18V18h4v-2c0-1.66-2.33-3-5-3Z'],

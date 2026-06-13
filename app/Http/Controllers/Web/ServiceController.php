@@ -48,6 +48,9 @@ class ServiceController extends Controller
                 'students' => ComputerTrainingStudent::latest()->paginate($perPage, ['*'], 'student_page'),
             ]);
         }
+        if ($service === 'bank-asia') {
+            return redirect()->route('bank-asia.tp-updates.index');
+        }
 
         return view('services.show', [
             'service' => Reminder::SERVICES[$service],

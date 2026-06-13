@@ -28,7 +28,6 @@
                 <div class="mb-6">
                     <div class="mb-4 grid size-11 place-items-center rounded-md bg-teal-600 font-bold shadow-sm">D</div>
                     <h2 class="text-2xl font-bold">Sign in</h2>
-                    <p class="mt-1 text-sm text-slate-400">Demo: admin@dpoerp.test / password</p>
                 </div>
                 <label class="mb-4 block">
                     <span class="mb-1 block text-sm text-slate-300">Email</span>

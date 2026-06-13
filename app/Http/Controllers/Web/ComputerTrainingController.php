@@ -225,6 +225,76 @@ class ComputerTrainingController extends Controller
         return back()->with('status', 'Notice published.');
     }
 
+    public function syncGoogleSheet(Request $request): RedirectResponse
+    {
+        $sheetId = '1ca1k65_IuGOGHgbJQTNKbVkqzLk1CH9Lizu5exDOLIs';
+        $gid = '0';
+        $csvUrl = "https://docs.google.com/spreadsheets/d/{$sheetId}/export?format=csv&gid={$gid}";
+
+        try {
+            $response = \Illuminate\Support\Facades\Http::get($csvUrl);
+            
+            // Check if Google returned an HTML page (like a login page) instead of CSV
+            if (!$response->successful() || str_contains($response->body(), '<!DOCTYPE html>')) {
+                return back()->withErrors(['google_sheet' => 'Could not access the Google Sheet. Please ensure its sharing settings are set to "Anyone with the link can view".'])->with('tab', 'marketing');
+            }
+
+            $rows = array_map('str_getcsv', explode("\n", trim($response->body())));
+            if (count($rows) < 2) {
+                return back()->with('status', 'Google Sheet is empty or invalid.')->with('tab', 'marketing');
+            }
+
+            $header = array_shift($rows);
+            // lowercase and slugify headers for easier matching
+            $header = array_map(fn($h) => strtolower(trim(preg_replace('/[^A-Za-z0-9-]+/', '_', $h), '_')), $header);
+            
+            $companyId = $request->user()?->company_id;
+            $importedCount = 0;
+
+            foreach ($rows as $row) {
+                if (count($header) !== count($row)) {
+                    continue; // Skip malformed rows
+                }
+                $data = array_combine($header, $row);
+                
+                $nameKey = collect($header)->first(fn($key) => in_array($key, ['student_name', 'name', 'full_name', 'student', 'lead_name']));
+                $phoneKey = collect($header)->first(fn($key) => in_array($key, ['mobile_number', 'phone', 'mobile', 'contact', 'phone_number']));
+                $courseKey = collect($header)->first(fn($key) => in_array($key, ['interested_course', 'course', 'program']));
+                $sourceKey = collect($header)->first(fn($key) => in_array($key, ['school_name', 'source', 'school']));
+                $statusKey = collect($header)->first(fn($key) => in_array($key, ['status', 'state']));
+                
+                if (!$nameKey || empty($data[$nameKey])) continue;
+
+                $phone = $phoneKey && isset($data[$phoneKey]) ? trim($data[$phoneKey]) : null;
+
+                // Simple deduplication based on phone number if available
+                $existing = null;
+                if ($phone) {
+                    $existing = \App\Models\ComputerTrainingMarketingLead::where('company_id', $companyId)
+                                ->where('phone', $phone)
+                                ->first();
+                }
+
+                if (!$existing) {
+                    \App\Models\ComputerTrainingMarketingLead::create([
+                        'company_id'        => $companyId,
+                        'name'              => trim($data[$nameKey]),
+                        'phone'             => $phone,
+                        'interested_course' => $courseKey && isset($data[$courseKey]) ? trim($data[$courseKey]) : null,
+                        'source'            => $sourceKey && isset($data[$sourceKey]) ? trim($data[$sourceKey]) : null,
+                        'status'            => $statusKey && !empty($data[$statusKey]) ? strtolower(trim($data[$statusKey])) : 'new',
+                    ]);
+                    $importedCount++;
+                }
+            }
+
+            return back()->with('status', "Successfully synced $importedCount new leads from Google Sheet.")->with('tab', 'marketing');
+
+        } catch (\Exception $e) {
+            return back()->withErrors(['google_sheet' => 'Error syncing Google Sheet: ' . $e->getMessage()])->with('tab', 'marketing');
+        }
+    }
+
     private function withCompany(Request $request, array $data): array
     {
         return [

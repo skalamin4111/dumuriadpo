@@ -41,8 +41,22 @@ Route::middleware(['auth', 'active', 'tenant'])->group(function () {
     Route::put('/services/computer-training/marketing/{lead}', [ComputerTrainingController::class, 'updateMarketingLead'])->name('computer-training.marketing.update');
     Route::get('/services/computer-training/marketing/export', [ComputerTrainingController::class, 'exportMarketingLead'])->name('computer-training.marketing.export');
     Route::post('/services/computer-training/marketing/import', [ComputerTrainingController::class, 'importMarketingLead'])->name('computer-training.marketing.import');
+    Route::post('/services/computer-training/marketing/sync-google-sheet', [ComputerTrainingController::class, 'syncGoogleSheet'])->name('computer-training.marketing.sync-google-sheet');
     Route::post('/services/computer-training/reminders', [ComputerTrainingController::class, 'storeReminder'])->name('computer-training.reminders.store');
     Route::post('/services/computer-training/notices', [ComputerTrainingController::class, 'storeNotice'])->name('computer-training.notices.store');
+    
+    // Bank Asia TP Updates
+    Route::resource('services/bank-asia/tp-updates', \App\Http\Controllers\Web\BankAsiaTpUpdateController::class)
+        ->names([
+            'index' => 'bank-asia.tp-updates.index',
+            'create' => 'bank-asia.tp-updates.create',
+            'store' => 'bank-asia.tp-updates.store',
+            'show' => 'bank-asia.tp-updates.show',
+            'edit' => 'bank-asia.tp-updates.edit',
+            'update' => 'bank-asia.tp-updates.update',
+            'destroy' => 'bank-asia.tp-updates.destroy',
+        ]);
+
     Route::get('/services/{service}', [ServiceController::class, 'show'])->name('services.show');
     Route::resource('reminders', ReminderController::class)->only(['index', 'store', 'update']);
     Route::resource('reports', ReportController::class)->only(['index', 'store']);

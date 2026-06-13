@@ -18,14 +18,28 @@ class DatabaseSeeder extends Seeder
     public function run(): void
     {
         $permissions = [
-            'view employees', 'create employees', 'update employees', 'delete employees',
-            'view customers', 'create customers', 'update customers', 'delete customers',
-            'view tasks', 'create tasks', 'update tasks', 'delete tasks',
-            'view reports', 'create reports', 'review reports',
-            'view audit logs', 'manage settings', 'manage files', 'manage roles',
+            'view employees',
+            'create employees',
+            'update employees',
+            'delete employees',
+            'view customers',
+            'create customers',
+            'update customers',
+            'delete customers',
+            'view tasks',
+            'create tasks',
+            'update tasks',
+            'delete tasks',
+            'view reports',
+            'create reports',
+            'review reports',
+            'view audit logs',
+            'manage settings',
+            'manage files',
+            'manage roles',
         ];
 
-        collect($permissions)->each(fn ($name) => Permission::firstOrCreate(['name' => $name, 'guard_name' => 'web']));
+        collect($permissions)->each(fn($name) => Permission::firstOrCreate(['name' => $name, 'guard_name' => 'web']));
 
         $superAdmin = Role::firstOrCreate(['name' => 'Super Admin', 'guard_name' => 'web']);
         $admin = Role::firstOrCreate(['name' => 'Admin', 'guard_name' => 'web']);
@@ -51,11 +65,11 @@ class DatabaseSeeder extends Seeder
             ['name' => 'Customer Success', 'code' => 'CS', 'company_id' => $company->id],
             ['name' => 'Field Service', 'code' => 'FS', 'company_id' => $company->id],
             ['name' => 'Finance', 'code' => 'FIN', 'company_id' => $company->id],
-        ])->map(fn ($data) => Department::firstOrCreate(['code' => $data['code']], $data));
+        ])->map(fn($data) => Department::firstOrCreate(['code' => $data['code']], $data));
 
         $adminUser = User::firstOrCreate(
-            ['email' => 'admin@dpoerp.test'],
-            ['company_id' => $company->id, 'name' => 'DPO Admin', 'password' => 'password', 'is_active' => true, 'email_verified_at' => now()]
+            ['email' => 'mazedul.admin@gmail.com'],
+            ['company_id' => $company->id, 'name' => 'DPO Admin', 'password' => 'Dpo@3896', 'is_active' => true, 'email_verified_at' => now()]
         );
         $adminUser->update(['company_id' => $company->id, 'email_verified_at' => $adminUser->email_verified_at ?? now()]);
         $adminUser->assignRole('Super Admin');
@@ -85,19 +99,19 @@ class DatabaseSeeder extends Seeder
                 [
                     'company_id' => $company->id,
                     'department_id' => $departments->random()->id,
-                    'employee_code' => 'EMP-'.str_pad((string) $index, 5, '0', STR_PAD_LEFT),
+                    'employee_code' => 'EMP-' . str_pad((string) $index, 5, '0', STR_PAD_LEFT),
                     'designation' => collect(['Service Executive', 'CRM Associate', 'Field Engineer', 'Coordinator'])->random(),
                     'joining_date' => now()->subDays(rand(30, 700)),
-                    'phone' => '+1 555 01'.str_pad((string) $index, 2, '0', STR_PAD_LEFT),
+                    'phone' => '+1 555 01' . str_pad((string) $index, 2, '0', STR_PAD_LEFT),
                     'status' => 'active',
                 ]
             ));
         }
 
         $customers = collect(['Northwind Logistics', 'Acme Corporate', 'BluePeak Services', 'Vertex Retail', 'Nexus Health'])
-            ->map(fn ($name, $i) => Customer::firstOrCreate(
-                ['email' => strtolower(str_replace(' ', '.', $name)).'@example.com'],
-                ['company_id' => $company->id, 'name' => $name, 'phone' => '+1 555 20'.str_pad((string) $i, 2, '0', STR_PAD_LEFT), 'company_name' => $name, 'type' => collect(['regular', 'vip', 'corporate', 'lead'])->random(), 'status' => 'active', 'notes' => 'Seed CRM account.']
+            ->map(fn($name, $i) => Customer::firstOrCreate(
+                ['email' => strtolower(str_replace(' ', '.', $name)) . '@example.com'],
+                ['company_id' => $company->id, 'name' => $name, 'phone' => '+1 555 20' . str_pad((string) $i, 2, '0', STR_PAD_LEFT), 'company_name' => $name, 'type' => collect(['regular', 'vip', 'corporate', 'lead'])->random(), 'status' => 'active', 'notes' => 'Seed CRM account.']
             ));
 
         foreach (range(1, 18) as $index) {

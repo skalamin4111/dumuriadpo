@@ -1,0 +1,298 @@
+<x-app-layout title="Edit TP Update">
+    <div class="mb-6">
+        <div class="flex items-center gap-3">
+            <a href="{{ route('bank-asia.tp-updates.index') }}" class="btn btn-muted px-2.5">
+                <svg class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+            </a>
+            <div>
+                <h1 class="text-2xl font-bold tracking-tight">Edit TP Update Form</h1>
+                <p class="text-sm text-slate-500 dark:text-slate-400">Fill in the details to generate the TP update application and undertaking.</p>
+            </div>
+        </div>
+    </div>
+
+    @if ($errors->any())
+        <div class="mb-6 rounded-lg border border-red-200 bg-red-50 p-4 text-red-800 dark:bg-red-500/10 dark:border-red-500/30 dark:text-red-400">
+            <div class="flex items-center gap-2 font-medium">
+                <svg class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="m15 9-6 6M9 9l6 6"/></svg>
+                Please correct the following errors:
+            </div>
+            <ul class="mt-2 list-inside list-disc text-sm">
+                @foreach ($errors->all() as $error)
+                    <li>{{ $error }}</li>
+                @endforeach
+            </ul>
+        </div>
+    @endif
+
+    <form action="{{ route('bank-asia.tp-updates.update', $tpUpdate) }}" method="POST" class="space-y-6 lg:space-y-8"
+        x-data="{
+            regDepositAmt: '{{ old('regular_daily_tx_amount', $tpUpdate->regular_daily_tx_amount) }}',
+            oneTimeDepositAmt: '{{ old('one_time_cash_deposit_amount', $tpUpdate->one_time_cash_deposit_amount) }}',
+            undertakingOpen: {{ old('animal_quantity', $tpUpdate->animal_quantity) || old('total_amount', $tpUpdate->total_amount) ? 'true' : 'false' }},
+            undertakingAmount: '{{ old('total_amount', $tpUpdate->total_amount) }}',
+            
+            get totalDeposit() {
+                return (parseFloat(this.regDepositAmt) || 0) + (parseFloat(this.oneTimeDepositAmt) || 0);
+            },
+            
+            checkUndertaking() {
+                if (this.totalDeposit >= 400000) {
+                    this.undertakingOpen = true;
+                    this.undertakingAmount = this.totalDeposit;
+                }
+            }
+        }"
+        x-init="
+            $watch('regDepositAmt', value => checkUndertaking());
+            $watch('oneTimeDepositAmt', value => checkUndertaking());
+        "
+    >
+        @csrf
+        @method('PUT')
+
+        {{-- Client Details --}}
+        <section class="surface p-6 mb-6">
+            <h2 class="mb-4 text-lg font-semibold text-slate-800 dark:text-slate-200">Client Information</h2>
+            <div class="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+                <div>
+                    <label class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">Date <span class="text-red-500">*</span></label>
+                    <input type="date" name="date" class="field" value="{{ old('date', $tpUpdate->date) }}" required>
+                </div>
+                <div>
+                    <label class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">Account Number <span class="text-red-500">*</span></label>
+                    <input type="text" name="account_number" class="field" value="{{ old('account_number', $tpUpdate->account_number) }}" required>
+                </div>
+                <div>
+                    <label class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">Account Name <span class="text-red-500">*</span></label>
+                    <input type="text" name="account_name" class="field" value="{{ old('account_name', $tpUpdate->account_name) }}" required>
+                </div>
+                <div>
+                    <label class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">Account Type <span class="text-red-500">*</span></label>
+                    <select name="account_type" class="field" required>
+                        <option value="Savings Account" {{ old('account_type', $tpUpdate->account_type) == 'Savings Account' ? 'selected' : '' }}>Savings Account (সেভিংস একাউন্ট)</option>
+                        <option value="Current Account" {{ old('account_type', $tpUpdate->account_type) == 'Current Account' ? 'selected' : '' }}>Current Account (কারেন্ট একাউন্ট)</option>
+                        <option value="SND Account" {{ old('account_type', $tpUpdate->account_type) == 'SND Account' ? 'selected' : '' }}>SND Account (এস.এন.ডি একাউন্ট)</option>
+                        <option value="Other" {{ old('account_type', $tpUpdate->account_type) == 'Other' ? 'selected' : '' }}>Other (অন্যান্য)</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">Client Mobile</label>
+                    <input type="text" name="client_mobile" class="field" value="{{ old('client_mobile', $tpUpdate->client_mobile) }}">
+                </div>
+            </div>
+        </section>
+
+        {{-- Limits - Regular --}}
+        <section class="surface p-6 mb-6" x-data="{ isOpen: {{ (old('regular_daily_tx_count', $tpUpdate->regular_daily_tx_count) || old('regular_daily_tx_amount', $tpUpdate->regular_daily_tx_amount) || old('regular_monthly_tx_count', $tpUpdate->regular_monthly_tx_count) || old('regular_monthly_tx_amount', $tpUpdate->regular_monthly_tx_amount) || old('regular_withdrawal_daily_count', $tpUpdate->regular_withdrawal_daily_count) || old('regular_withdrawal_daily_amount', $tpUpdate->regular_withdrawal_daily_amount) || old('regular_withdrawal_monthly_count', $tpUpdate->regular_withdrawal_monthly_count) || old('regular_withdrawal_monthly_amount', $tpUpdate->regular_withdrawal_monthly_amount) || old('regular_transfer_daily_count', $tpUpdate->regular_transfer_daily_count) || old('regular_transfer_daily_amount', $tpUpdate->regular_transfer_daily_amount) || old('regular_transfer_monthly_count', $tpUpdate->regular_transfer_monthly_count) || old('regular_transfer_monthly_amount', $tpUpdate->regular_transfer_monthly_amount)) ? 'true' : 'false' }} }">
+            <label class="flex items-center gap-3 cursor-pointer">
+                <input type="checkbox" x-model="isOpen" class="size-5 rounded border-slate-300 text-teal-600 focus:ring-teal-600 dark:border-slate-600 dark:bg-slate-900">
+                <h2 class="text-lg font-semibold text-slate-800 dark:text-slate-200">Regular Transactions (নিয়মিত লেনদেন)</h2>
+            </label>
+            <div x-show="isOpen" style="display: none;" class="space-y-6 mt-6">
+                <!-- Cash Deposit -->
+                <div>
+                    <div class="mt-6 font-medium text-sm text-slate-700 dark:text-slate-300 mb-3 border-b pb-2">Cash Deposit (নগদ জমা)</div>
+                    <div class="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+                        <div>
+                            <label class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">Daily Tx Count</label>
+                            <input type="number" name="regular_daily_tx_count" class="field" value="{{ old('regular_daily_tx_count', $tpUpdate->regular_daily_tx_count) }}">
+                        </div>
+                        <div>
+                            <label class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">Daily Amount</label>
+                            <input type="number" step="1" name="regular_daily_tx_amount" class="field" value="{{ old('regular_daily_tx_amount', $tpUpdate->regular_daily_tx_amount) }}" x-model="regDepositAmt">
+                        </div>
+                        <div>
+                            <label class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">Monthly Tx Count</label>
+                            <input type="number" name="regular_monthly_tx_count" class="field" value="{{ old('regular_monthly_tx_count', $tpUpdate->regular_monthly_tx_count) }}">
+                        </div>
+                        <div>
+                            <label class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">Monthly Amount</label>
+                            <input type="number" step="1" name="regular_monthly_tx_amount" class="field" value="{{ old('regular_monthly_tx_amount', $tpUpdate->regular_monthly_tx_amount) }}">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Cash Withdrawal -->
+                <div>
+                    <div class="mt-6 font-medium text-sm text-slate-700 dark:text-slate-300 mb-3 border-b pb-2">Cash Withdrawal (নগদ উত্তোলন)</div>
+                    <div class="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+                        <div>
+                            <label class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">Daily Tx Count</label>
+                            <input type="number" name="regular_withdrawal_daily_count" class="field" value="{{ old('regular_withdrawal_daily_count', $tpUpdate->regular_withdrawal_daily_count) }}">
+                        </div>
+                        <div>
+                            <label class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">Daily Amount</label>
+                            <input type="number" step="1" name="regular_withdrawal_daily_amount" class="field" value="{{ old('regular_withdrawal_daily_amount', $tpUpdate->regular_withdrawal_daily_amount) }}">
+                        </div>
+                        <div>
+                            <label class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">Monthly Tx Count</label>
+                            <input type="number" name="regular_withdrawal_monthly_count" class="field" value="{{ old('regular_withdrawal_monthly_count', $tpUpdate->regular_withdrawal_monthly_count) }}">
+                        </div>
+                        <div>
+                            <label class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">Monthly Amount</label>
+                            <input type="number" step="1" name="regular_withdrawal_monthly_amount" class="field" value="{{ old('regular_withdrawal_monthly_amount', $tpUpdate->regular_withdrawal_monthly_amount) }}">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Transfer -->
+                <div>
+                    <div class="mt-6 font-medium text-sm text-slate-700 dark:text-slate-300 mb-3 border-b pb-2">Transfer (স্থানান্তর লেনদেন)</div>
+                    <div class="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+                        <div>
+                            <label class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">Daily Tx Count</label>
+                            <input type="number" name="regular_transfer_daily_count" class="field" value="{{ old('regular_transfer_daily_count', $tpUpdate->regular_transfer_daily_count) }}">
+                        </div>
+                        <div>
+                            <label class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">Daily Amount</label>
+                            <input type="number" step="1" name="regular_transfer_daily_amount" class="field" value="{{ old('regular_transfer_daily_amount', $tpUpdate->regular_transfer_daily_amount) }}">
+                        </div>
+                        <div>
+                            <label class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">Monthly Tx Count</label>
+                            <input type="number" name="regular_transfer_monthly_count" class="field" value="{{ old('regular_transfer_monthly_count', $tpUpdate->regular_transfer_monthly_count) }}">
+                        </div>
+                        <div>
+                            <label class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">Monthly Amount</label>
+                            <input type="number" step="1" name="regular_transfer_monthly_amount" class="field" value="{{ old('regular_transfer_monthly_amount', $tpUpdate->regular_transfer_monthly_amount) }}">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        {{-- Limits - One Time --}}
+        <section class="surface p-6 mb-6" x-data="{ isOpen: {{ (old('one_time_cash_deposit_count', $tpUpdate->one_time_cash_deposit_count) || old('one_time_cash_deposit_amount', $tpUpdate->one_time_cash_deposit_amount) || old('one_time_cash_deposit_monthly_count', $tpUpdate->one_time_cash_deposit_monthly_count) || old('one_time_cash_deposit_monthly_amount', $tpUpdate->one_time_cash_deposit_monthly_amount) || old('one_time_cash_withdrawal_count', $tpUpdate->one_time_cash_withdrawal_count) || old('one_time_cash_withdrawal_amount', $tpUpdate->one_time_cash_withdrawal_amount) || old('one_time_cash_withdrawal_monthly_count', $tpUpdate->one_time_cash_withdrawal_monthly_count) || old('one_time_cash_withdrawal_monthly_amount', $tpUpdate->one_time_cash_withdrawal_monthly_amount) || old('one_time_transfer_count', $tpUpdate->one_time_transfer_count) || old('one_time_transfer_amount', $tpUpdate->one_time_transfer_amount) || old('one_time_transfer_monthly_count', $tpUpdate->one_time_transfer_monthly_count) || old('one_time_transfer_monthly_amount', $tpUpdate->one_time_transfer_monthly_amount) || old('source_of_funds', $tpUpdate->source_of_funds)) ? 'true' : 'false' }} }">
+            <label class="flex items-center gap-3 cursor-pointer">
+                <input type="checkbox" x-model="isOpen" class="size-5 rounded border-slate-300 text-teal-600 focus:ring-teal-600 dark:border-slate-600 dark:bg-slate-900">
+                <h2 class="text-lg font-semibold text-slate-800 dark:text-slate-200">One Time Transactions (একবার লেনদেন)</h2>
+            </label>
+            <div x-show="isOpen" style="display: none;" class="space-y-6 mt-6">
+                <!-- Cash Deposit -->
+                <div>
+                    <div class="mt-6 font-medium text-sm text-slate-700 dark:text-slate-300 mb-3 border-b pb-2">Cash Deposit (নগদ জমা)</div>
+                    <div class="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+                        <div>
+                            <label class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">Daily Tx Count</label>
+                            <input type="number" name="one_time_cash_deposit_count" class="field" value="{{ old('one_time_cash_deposit_count', $tpUpdate->one_time_cash_deposit_count) }}">
+                        </div>
+                        <div>
+                            <label class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">Daily Amount</label>
+                            <input type="number" step="1" name="one_time_cash_deposit_amount" class="field" value="{{ old('one_time_cash_deposit_amount', $tpUpdate->one_time_cash_deposit_amount) }}" x-model="oneTimeDepositAmt">
+                        </div>
+                        <div>
+                            <label class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">Monthly Tx Count</label>
+                            <input type="number" name="one_time_cash_deposit_monthly_count" class="field" value="{{ old('one_time_cash_deposit_monthly_count', $tpUpdate->one_time_cash_deposit_monthly_count) }}">
+                        </div>
+                        <div>
+                            <label class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">Monthly Amount</label>
+                            <input type="number" step="1" name="one_time_cash_deposit_monthly_amount" class="field" value="{{ old('one_time_cash_deposit_monthly_amount', $tpUpdate->one_time_cash_deposit_monthly_amount) }}">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Cash Withdrawal -->
+                <div>
+                    <div class="mt-6 font-medium text-sm text-slate-700 dark:text-slate-300 mb-3 border-b pb-2">Cash Withdrawal (নগদ উত্তোলন)</div>
+                    <div class="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+                        <div>
+                            <label class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">Daily Tx Count</label>
+                            <input type="number" name="one_time_cash_withdrawal_count" class="field" value="{{ old('one_time_cash_withdrawal_count', $tpUpdate->one_time_cash_withdrawal_count) }}">
+                        </div>
+                        <div>
+                            <label class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">Daily Amount</label>
+                            <input type="number" step="1" name="one_time_cash_withdrawal_amount" class="field" value="{{ old('one_time_cash_withdrawal_amount', $tpUpdate->one_time_cash_withdrawal_amount) }}">
+                        </div>
+                        <div>
+                            <label class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">Monthly Tx Count</label>
+                            <input type="number" name="one_time_cash_withdrawal_monthly_count" class="field" value="{{ old('one_time_cash_withdrawal_monthly_count', $tpUpdate->one_time_cash_withdrawal_monthly_count) }}">
+                        </div>
+                        <div>
+                            <label class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">Monthly Amount</label>
+                            <input type="number" step="1" name="one_time_cash_withdrawal_monthly_amount" class="field" value="{{ old('one_time_cash_withdrawal_monthly_amount', $tpUpdate->one_time_cash_withdrawal_monthly_amount) }}">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Transfer -->
+                <div>
+                    <div class="mt-6 font-medium text-sm text-slate-700 dark:text-slate-300 mb-3 border-b pb-2">Transfer (স্থানান্তর লেনদেন)</div>
+                    <div class="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+                        <div>
+                            <label class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">Daily Tx Count</label>
+                            <input type="number" name="one_time_transfer_count" class="field" value="{{ old('one_time_transfer_count', $tpUpdate->one_time_transfer_count) }}">
+                        </div>
+                        <div>
+                            <label class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">Daily Amount</label>
+                            <input type="number" step="1" name="one_time_transfer_amount" class="field" value="{{ old('one_time_transfer_amount', $tpUpdate->one_time_transfer_amount) }}">
+                        </div>
+                        <div>
+                            <label class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">Monthly Tx Count</label>
+                            <input type="number" name="one_time_transfer_monthly_count" class="field" value="{{ old('one_time_transfer_monthly_count', $tpUpdate->one_time_transfer_monthly_count) }}">
+                        </div>
+                        <div>
+                            <label class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">Monthly Amount</label>
+                            <input type="number" step="1" name="one_time_transfer_monthly_amount" class="field" value="{{ old('one_time_transfer_monthly_amount', $tpUpdate->one_time_transfer_monthly_amount) }}">
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div x-show="isOpen" style="display: none;" class="mt-5 border-t pt-5">
+                <label class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">Source of Funds (লেনদেনের তহবিলের উৎস)</label>
+                <input type="text" name="source_of_funds" class="field" value="{{ old('source_of_funds', $tpUpdate->source_of_funds) }}">
+            </div>
+        </section>
+
+        {{-- Undertaking Details --}}
+        <section class="surface p-6 mb-6">
+            <label class="flex items-center gap-3 cursor-pointer">
+                <input type="checkbox" name="is_undertaking_checked" x-model="undertakingOpen" class="size-5 rounded border-slate-300 text-teal-600 focus:ring-teal-600 dark:border-slate-600 dark:bg-slate-900">
+                <h2 class="text-lg font-semibold text-slate-800 dark:text-slate-200">Undertaking Details (অঙ্গীকারনামা)</h2>
+            </label>
+            <div x-show="undertakingOpen" style="display: none;" class="mt-6">
+                <div class="grid gap-5 sm:grid-cols-2">
+                    <div>
+                        <label class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">Animal Quantity (গরুর সংখ্যা)</label>
+                        <input type="number" name="animal_quantity" class="field" value="{{ old('animal_quantity', $tpUpdate->animal_quantity) }}">
+                    </div>
+                    <div>
+                        <label class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">Total Amount (মোট টাকা)</label>
+                        <input type="number" step="1" name="total_amount" class="field" x-model="undertakingAmount">
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        {{-- Agent Details --}}
+        <section class="surface p-6 mb-6">
+            <h2 class="mb-4 text-lg font-semibold text-slate-800 dark:text-slate-200">Agent Details (এজেন্ট/সিএসও-এর অংশ)</h2>
+            <div class="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+                <div>
+                    <label class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">Agent Name</label>
+                    <input type="text" name="agent_name" class="field" value="{{ old('agent_name', $tpUpdate->agent_name ?? 'মোঃ আলামিন') }}">
+                </div>
+                <div>
+                    <label class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">Designation</label>
+                    <input type="text" name="agent_designation" class="field" value="{{ old('agent_designation', $tpUpdate->agent_designation ?? 'সি এস ও') }}">
+                </div>
+                <div>
+                    <label class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">Mobile No</label>
+                    <input type="text" name="agent_mobile" class="field" value="{{ old('agent_mobile', $tpUpdate->agent_mobile ?? '01955801666') }}">
+                </div>
+                <div>
+                    <label class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">Outlet Name & Address</label>
+                    <input type="text" name="outlet_name_address" class="field" value="{{ old('outlet_name_address', $tpUpdate->outlet_name_address ?? 'ডুমুরিয়া ডি পি ও, খুলনা') }}">
+                </div>
+            </div>
+        </section>
+
+        <div class="flex items-center justify-end gap-3 pt-2 pb-10">
+            <a href="{{ route('bank-asia.tp-updates.index') }}" class="btn btn-muted">Cancel</a>
+            <button type="submit" class="btn btn-primary">
+                <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+                Update & Continue to Print
+            </button>
+        </div>
+    </form>
+</x-app-layout>
