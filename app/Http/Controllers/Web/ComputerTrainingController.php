@@ -250,6 +250,7 @@ class ComputerTrainingController extends Controller
             
             $companyId = $request->user()?->company_id;
             $importedCount = 0;
+            $syncedLeadIds = [];
 
             foreach ($rows as $row) {
                 if (count($header) !== count($row)) {
@@ -262,33 +263,79 @@ class ComputerTrainingController extends Controller
                 $courseKey = collect($header)->first(fn($key) => in_array($key, ['interested_course', 'course', 'program']));
                 $sourceKey = collect($header)->first(fn($key) => in_array($key, ['school_name', 'source', 'school']));
                 $statusKey = collect($header)->first(fn($key) => in_array($key, ['status', 'state']));
+                $commentKey = collect($header)->first(fn($key) => in_array($key, ['comment', 'comments', 'note', 'notes', 'remark', 'remarks']));
                 
                 if (!$nameKey || empty($data[$nameKey])) continue;
 
-                $phone = $phoneKey && isset($data[$phoneKey]) ? trim($data[$phoneKey]) : null;
+                $name = trim($data[$nameKey]);
+                $phone = $phoneKey && !empty($data[$phoneKey]) ? trim($data[$phoneKey]) : null;
 
-                // Simple deduplication based on phone number if available
+                $commentValue = $commentKey && !empty($data[$commentKey]) ? trim($data[$commentKey]) : null;
+                
+                $statusValue = 'new';
+                if (!empty($commentValue)) {
+                    $statusValue = strtolower($commentValue);
+                } elseif ($statusKey && !empty($data[$statusKey])) {
+                    $statusValue = strtolower(trim($data[$statusKey]));
+                }
+
+                // Deduplication based on phone if available, otherwise fallback to name
                 $existing = null;
                 if ($phone) {
                     $existing = \App\Models\ComputerTrainingMarketingLead::where('company_id', $companyId)
                                 ->where('phone', $phone)
                                 ->first();
+                } else {
+                    $existing = \App\Models\ComputerTrainingMarketingLead::where('company_id', $companyId)
+                                ->where('name', $name)
+                                ->first();
                 }
 
                 if (!$existing) {
-                    \App\Models\ComputerTrainingMarketingLead::create([
+                    $lead = \App\Models\ComputerTrainingMarketingLead::create([
                         'company_id'        => $companyId,
-                        'name'              => trim($data[$nameKey]),
+                        'name'              => $name,
                         'phone'             => $phone,
                         'interested_course' => $courseKey && isset($data[$courseKey]) ? trim($data[$courseKey]) : null,
                         'source'            => $sourceKey && isset($data[$sourceKey]) ? trim($data[$sourceKey]) : null,
-                        'status'            => $statusKey && !empty($data[$statusKey]) ? strtolower(trim($data[$statusKey])) : 'new',
+                        'status'            => $statusValue,
+                        'notes'             => $commentValue,
                     ]);
+                    $syncedLeadIds[] = $lead->id;
                     $importedCount++;
+                } else {
+                    $updateData = ['name' => $name];
+                    if ($phone) {
+                        $updateData['phone'] = $phone;
+                    }
+                    if ($courseKey && isset($data[$courseKey])) {
+                        $updateData['interested_course'] = trim($data[$courseKey]);
+                    }
+                    if ($sourceKey && isset($data[$sourceKey])) {
+                        $updateData['source'] = trim($data[$sourceKey]);
+                    }
+                    
+                    $updateData['status'] = $statusValue;
+                    if ($commentValue) {
+                        $updateData['notes'] = $commentValue;
+                    }
+                    
+                    $existing->update($updateData);
+                    $syncedLeadIds[] = $existing->id;
                 }
             }
 
-            return back()->with('status', "Successfully synced $importedCount new leads from Google Sheet.")->with('tab', 'marketing');
+            // Keep only Google Sheet data by deleting leads that were not in the current sync
+            if (count($syncedLeadIds) > 0) {
+                \App\Models\ComputerTrainingMarketingLead::where('company_id', $companyId)
+                    ->whereNotIn('id', $syncedLeadIds)
+                    ->delete();
+            } else {
+                // If the sheet was completely empty of valid leads, clear everything
+                \App\Models\ComputerTrainingMarketingLead::where('company_id', $companyId)->delete();
+            }
+
+            return back()->with('status', "Successfully synced Google Sheet. Only current Google Sheet leads are kept.")->with('tab', 'marketing');
 
         } catch (\Exception $e) {
             return back()->withErrors(['google_sheet' => 'Error syncing Google Sheet: ' . $e->getMessage()])->with('tab', 'marketing');

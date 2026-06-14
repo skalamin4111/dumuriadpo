@@ -171,35 +171,42 @@
 
         <!-- Cropper Modal -->
         <template x-teleport="body">
-            <div x-show="isCropping" class="fixed inset-0 z-[100] bg-slate-900/95 flex flex-col no-print overflow-hidden" style="display: none;" @keydown.escape.window="closeModal()">
-                <div class="flex-1 overflow-hidden relative p-4 flex items-center justify-center min-h-0">
-                    <img x-ref="image" class="block max-w-full max-h-full">
+            <div x-show="isCropping" class="fixed inset-0 z-[100] bg-slate-900/95 flex flex-col no-print overflow-hidden h-[100dvh] w-screen" style="display: none;" @keydown.escape.window="closeModal()">
+                <!-- Strict height container for cropper to prevent flex blowout -->
+                <div class="relative flex-1 w-full overflow-hidden bg-black/50">
+                    <div class="absolute inset-2 sm:inset-4 flex items-center justify-center">
+                        <img x-ref="image" class="block max-w-full max-h-full">
+                    </div>
                 </div>
-                <div class="bg-slate-800 p-4 pb-8 sm:pb-4 shrink-0 shadow-lg flex flex-wrap sm:flex-nowrap items-center justify-between gap-4 border-t border-slate-700">
-                    <div class="flex items-center gap-3 w-full sm:w-auto shrink-0">
-                        <label class="text-sm text-slate-300 whitespace-nowrap">Format:</label>
-                        <select x-model="exportFormat" class="block w-full sm:w-32 rounded-md border-slate-600 bg-slate-700 text-white text-sm focus:border-teal-500 focus:ring-teal-500">
+                <!-- Bottom Action Bar -->
+                <div class="bg-slate-800 p-3 sm:p-4 shrink-0 shadow-[0_-10px_40px_rgba(0,0,0,0.3)] flex flex-wrap sm:flex-nowrap items-center justify-between gap-3 border-t border-slate-700/80 z-10 w-full" style="padding-bottom: calc(12px + env(safe-area-inset-bottom));">
+                    <div class="flex items-center justify-between w-full sm:w-auto shrink-0 order-1 sm:order-none">
+                        <label class="text-xs sm:text-sm font-medium text-slate-300 whitespace-nowrap mr-2">Format:</label>
+                        <select x-model="exportFormat" class="block w-full sm:w-32 rounded-lg border-slate-600 bg-slate-700/50 text-white text-xs sm:text-sm focus:border-teal-500 focus:ring-teal-500 py-1.5 sm:py-2">
                             <option value="pdf">PDF (Default)</option>
                             <option value="jpg">JPG Image</option>
                         </select>
                     </div>
-                    <div class="flex flex-wrap items-center gap-2 sm:gap-3 w-full sm:w-auto justify-end">
-                        <button @click="closeModal()" class="btn px-3 py-2 bg-slate-700 text-white border-slate-600 hover:bg-slate-600 text-sm whitespace-nowrap">
-                            Cancel
-                        </button>
-                        <button @click="rotateImage()" class="btn px-3 py-2 bg-slate-700 text-white border-slate-600 hover:bg-slate-600 shrink-0" title="Rotate 90°">
-                            <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.92-10.44l5.67-5.67"/></svg>
-                        </button>
+                    <div class="flex items-center gap-2 w-full sm:w-auto justify-between sm:justify-end order-2 sm:order-none">
+                        <div class="flex items-center gap-2">
+                            <button @click="closeModal()" class="btn px-3 py-1.5 sm:py-2 bg-slate-700 text-white border-slate-600 hover:bg-slate-600 text-xs sm:text-sm font-medium rounded-lg">
+                                Cancel
+                            </button>
+                            <button @click="rotateImage()" class="btn px-3 py-1.5 sm:py-2 bg-slate-700 text-white border-slate-600 hover:bg-slate-600 shrink-0 rounded-lg" title="Rotate 90°">
+                                <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.92-10.44l5.67-5.67"/></svg>
+                            </button>
+                        </div>
                         
                         <template x-if="croppedPages.length + 1 < expectedPages">
-                            <button @click="nextPage()" class="btn px-4 py-2 bg-blue-600 text-white border-transparent hover:bg-blue-700 flex items-center gap-2 text-sm whitespace-nowrap">
+                            <button @click="nextPage()" class="btn px-4 py-1.5 sm:py-2 bg-blue-600 text-white border-transparent hover:bg-blue-700 flex items-center gap-2 text-xs sm:text-sm font-bold rounded-lg shadow-md shadow-blue-900/20">
                                 Next Page
+                                <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
                             </button>
                         </template>
                         <template x-if="croppedPages.length + 1 === expectedPages">
-                            <button @click="shareEmail()" class="btn px-4 py-2 bg-teal-600 text-white border-transparent hover:bg-teal-700 flex items-center gap-2 text-sm whitespace-nowrap">
+                            <button @click="shareEmail()" class="btn px-4 py-1.5 sm:py-2 bg-teal-600 text-white border-transparent hover:bg-teal-700 flex items-center gap-2 text-xs sm:text-sm font-bold rounded-lg shadow-md shadow-teal-900/20">
                                 <svg class="size-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
-                                Share via Email
+                                Share
                             </button>
                         </template>
                     </div>
