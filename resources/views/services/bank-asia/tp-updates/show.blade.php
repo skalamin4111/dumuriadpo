@@ -170,13 +170,87 @@
                     </div>
                 </div>
                 <!-- Bottom Action Bar -->
-                <div class="bg-slate-800 p-3 sm:p-4 shrink-0 shadow-[0_-10px_40px_rgba(0,0,0,0.3)] flex flex-wrap sm:flex-nowrap items-center justify-between gap-3 border-t border-slate-700/80 z-10 w-full" style="padding-bottom: calc(12px + env(safe-area-inset-bottom));">
-                    <div class="flex items-center justify-between w-full sm:w-auto shrink-0 order-1 sm:order-none">
-                        <label class="text-xs sm:text-sm font-medium text-slate-300 whitespace-nowrap mr-2">Format:</label>
-                        <select x-model="exportFormat" class="block w-full sm:w-32 rounded-lg border-slate-600 bg-slate-700/50 text-white text-xs sm:text-sm focus:border-teal-500 focus:ring-teal-500 py-1.5 sm:py-2">
-                            <option value="pdf">PDF (Default)</option>
-                            <option value="jpg">JPG Image</option>
-                        </select>
+                <div class="relative bg-slate-800 p-3 sm:p-4 shrink-0 shadow-[0_-10px_40px_rgba(0,0,0,0.3)] flex flex-wrap sm:flex-nowrap items-center justify-between gap-3 border-t border-slate-700/80 z-10 w-full" style="padding-bottom: calc(12px + env(safe-area-inset-bottom));">
+                    
+                    <!-- Adjustments Snackbar / Bottom Sheet -->
+                    <div x-show="showAdjustments" 
+                         x-transition:enter="transition ease-out duration-200"
+                         x-transition:enter-start="opacity-0 translate-y-4"
+                         x-transition:enter-end="opacity-100 translate-y-0"
+                         x-transition:leave="transition ease-in duration-150"
+                         x-transition:leave-start="opacity-100 translate-y-0"
+                         x-transition:leave-end="opacity-0 translate-y-4"
+                         class="absolute bottom-[calc(100%+12px)] left-3 right-3 sm:left-auto sm:right-4 sm:w-80 bg-slate-800/95 backdrop-blur-md rounded-xl shadow-[0_10px_40px_rgba(0,0,0,0.5)] border border-slate-600 p-4 z-20" style="display: none;">
+                        
+                        <div class="flex items-center justify-between mb-3">
+                            <h3 class="text-slate-200 text-sm font-semibold">Custom Enhancements</h3>
+                            <button @click="showAdjustments = false" class="text-slate-400 hover:text-white transition-colors">
+                                <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                            </button>
+                        </div>
+                        
+                        <div class="space-y-4">
+                            <div>
+                                <div class="flex justify-between text-xs font-medium text-slate-300 mb-1.5">
+                                    <span>Brightness</span>
+                                    <span x-text="brightness + '%'"></span>
+                                </div>
+                                <input type="range" x-model="brightness" min="50" max="200" @input="setCustomFilter()" class="w-full h-1.5 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-teal-500">
+                            </div>
+                            <div>
+                                <div class="flex justify-between text-xs font-medium text-slate-300 mb-1.5">
+                                    <span>Contrast</span>
+                                    <span x-text="contrast + '%'"></span>
+                                </div>
+                                <input type="range" x-model="contrast" min="50" max="200" @input="setCustomFilter()" class="w-full h-1.5 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-teal-500">
+                            </div>
+                            <div>
+                                <div class="flex justify-between text-xs font-medium text-slate-300 mb-1.5">
+                                    <span>Saturation</span>
+                                    <span x-text="saturation + '%'"></span>
+                                </div>
+                                <input type="range" x-model="saturation" min="0" max="200" @input="setCustomFilter()" class="w-full h-1.5 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-teal-500">
+                            </div>
+                            <div>
+                                <div class="flex justify-between text-xs font-medium text-slate-300 mb-1.5">
+                                    <span>Grayscale</span>
+                                    <span x-text="grayscale + '%'"></span>
+                                </div>
+                                <input type="range" x-model="grayscale" min="0" max="100" @input="setCustomFilter()" class="w-full h-1.5 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-teal-500">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="flex items-center justify-between w-full sm:w-auto shrink-0 order-1 sm:order-none gap-2">
+                        <div class="flex items-center gap-1 sm:gap-2">
+                            <label class="hidden sm:block text-xs sm:text-sm font-medium text-slate-300 whitespace-nowrap">Format:</label>
+                            <div class="relative w-full sm:w-28">
+                                <select x-model="exportFormat" class="appearance-none block w-full rounded-lg border-slate-600 bg-slate-700/50 text-white text-xs sm:text-sm focus:border-teal-500 focus:ring-teal-500 py-1.5 sm:py-2 pl-3 pr-8">
+                                    <option value="pdf">PDF</option>
+                                    <option value="jpg">JPG</option>
+                                </select>
+                                <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-slate-400">
+                                    <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-1 sm:gap-2">
+                            <label class="hidden sm:block text-xs sm:text-sm font-medium text-slate-300 whitespace-nowrap">Filter:</label>
+                            <div class="relative w-full sm:w-36">
+                                <select x-model="imageFilter" @change="applyPresetFilter()" class="appearance-none block w-full rounded-lg border-slate-600 bg-slate-700/50 text-white text-xs sm:text-sm focus:border-teal-500 focus:ring-teal-500 py-1.5 sm:py-2 pl-3 pr-8">
+                                    <option value="none">Normal</option>
+                                    <option value="document">B&W Document</option>
+                                    <option value="enhance">Enhance Color</option>
+                                    <option value="custom">Custom</option>
+                                </select>
+                                <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-slate-400">
+                                    <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                                </div>
+                            </div>
+                            <button @click="showAdjustments = !showAdjustments" class="p-1.5 sm:p-2 bg-slate-700 text-white border border-slate-600 rounded-lg hover:bg-slate-600 transition-colors" title="Manual Adjustments" :class="showAdjustments ? 'bg-teal-600 border-teal-500' : ''">
+                                <svg class="size-4 sm:size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20V10M18 20V4M6 20v-4M6 12V4M12 6V4M18 16v-4"/></svg>
+                            </button>
+                        </div>
                     </div>
                     <div class="flex items-center gap-2 w-full sm:w-auto justify-between sm:justify-end order-2 sm:order-none">
                         <div class="flex items-center gap-2">
@@ -537,8 +611,75 @@
                 isCropping: false,
                 cropper: null,
                 exportFormat: 'pdf',
+                imageFilter: 'document',
+                showAdjustments: false,
+                brightness: 110,
+                contrast: 160,
+                saturation: 100,
+                grayscale: 100,
                 expectedPages: expectedPages,
                 croppedPages: [],
+                
+                getFilterStyle() {
+                    return `contrast(${this.contrast}%) saturate(${this.saturation}%) brightness(${this.brightness}%) grayscale(${this.grayscale}%)`;
+                },
+
+                applyFilterPreview() {
+                    if (!this.cropper) return;
+                    const container = this.$refs.image.parentElement;
+                    if (container) {
+                        const images = container.querySelectorAll('.cropper-canvas img, .cropper-view-box img');
+                        const filterStyle = this.getFilterStyle();
+                        images.forEach(img => {
+                            img.style.filter = filterStyle;
+                        });
+                    }
+                },
+                
+                applyPresetFilter() {
+                    if (this.imageFilter === 'document') {
+                        this.brightness = 110;
+                        this.contrast = 160;
+                        this.saturation = 100;
+                        this.grayscale = 100;
+                    } else if (this.imageFilter === 'enhance') {
+                        this.brightness = 105;
+                        this.contrast = 120;
+                        this.saturation = 130;
+                        this.grayscale = 0;
+                    } else if (this.imageFilter === 'none') {
+                        this.brightness = 100;
+                        this.contrast = 100;
+                        this.saturation = 100;
+                        this.grayscale = 0;
+                    }
+                    this.applyFilterPreview();
+                },
+
+                setCustomFilter() {
+                    this.imageFilter = 'custom';
+                    this.applyFilterPreview();
+                },
+
+                getFilteredCanvas() {
+                    const originalCanvas = this.cropper.getCroppedCanvas({
+                        fillColor: '#fff',
+                        imageSmoothingEnabled: true,
+                        imageSmoothingQuality: 'high',
+                    });
+                    
+                    if (this.imageFilter === 'none') {
+                        return originalCanvas;
+                    }
+                    
+                    const finalCanvas = document.createElement('canvas');
+                    finalCanvas.width = originalCanvas.width;
+                    finalCanvas.height = originalCanvas.height;
+                    const ctx = finalCanvas.getContext('2d');
+                    ctx.filter = this.getFilterStyle();
+                    ctx.drawImage(originalCanvas, 0, 0);
+                    return finalCanvas;
+                },
 
                 handleFile(event) {
                     const file = event.target.files[0];
@@ -568,6 +709,9 @@
                                 cropBoxMovable: true,
                                 cropBoxResizable: true,
                                 toggleDragModeOnDblclick: false,
+                                ready: () => {
+                                    this.applyFilterPreview();
+                                }
                             });
                         }, 50);
                     };
@@ -596,13 +740,7 @@
                 nextPage() {
                     if (!this.cropper) return;
                     
-                    const canvas = this.cropper.getCroppedCanvas({
-                        fillColor: '#fff',
-                        imageSmoothingEnabled: true,
-                        imageSmoothingQuality: 'high',
-                    });
-                    
-                    this.croppedPages.push(canvas);
+                    this.croppedPages.push(this.getFilteredCanvas());
                     
                     // Close and trigger next upload
                     this.isCropping = false;
@@ -621,12 +759,7 @@
                     if (!this.cropper) return;
                     
                     // Get current canvas
-                    const canvas = this.cropper.getCroppedCanvas({
-                        fillColor: '#fff',
-                        imageSmoothingEnabled: true,
-                        imageSmoothingQuality: 'high',
-                    });
-                    this.croppedPages.push(canvas);
+                    this.croppedPages.push(this.getFilteredCanvas());
                     
                     const fileNameBase = `TP_Update_{{ $tpUpdate->account_number }}`;
                     let shareFiles = [];
