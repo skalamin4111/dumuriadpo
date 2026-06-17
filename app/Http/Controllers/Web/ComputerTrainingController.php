@@ -10,6 +10,8 @@ use App\Models\ComputerTrainingFee;
 use App\Models\ComputerTrainingMarketingLead;
 use App\Models\ComputerTrainingNotice;
 use App\Models\ComputerTrainingStudent;
+use App\Models\ComputerTrainingBatch;
+use App\Models\ComputerTrainingCourse;
 use App\Models\Reminder;
 use App\Exports\ComputerTrainingMarketingLeadExport;
 use App\Imports\ComputerTrainingMarketingLeadImport;
@@ -20,34 +22,150 @@ use Maatwebsite\Excel\Facades\Excel;
 
 class ComputerTrainingController extends Controller
 {
-    public const COURSES = [
-        'Basic Computer',
-        'Office Application',
-        'Graphic Design',
-        'Web Development',
-        'Freelancing',
-        'Digital Marketing',
-        'Diploma in software application',
-    ];
+
 
     public function storeStudent(Request $request): RedirectResponse
     {
         $data = $request->validate([
             'student_id' => ['nullable', 'string', 'max:255'],
             'name' => ['required', 'string', 'max:255'],
+            'name_bn' => ['nullable', 'string', 'max:255'],
+            'father_name' => ['nullable', 'string', 'max:255'],
+            'mother_name' => ['nullable', 'string', 'max:255'],
+            'date_of_birth' => ['nullable', 'date'],
+            'nid_or_birth_reg' => ['nullable', 'string', 'max:255'],
+            'nationality' => ['nullable', 'string', 'max:255'],
+            'marital_status' => ['nullable', 'string', 'max:255'],
+            'gender' => ['nullable', 'string', 'max:255'],
+            'religion' => ['nullable', 'string', 'max:255'],
+            'educational_qualifications' => ['nullable', 'array'],
+            'educational_qualifications.*.exam_name' => ['nullable', 'string', 'max:255'],
+            'educational_qualifications.*.group' => ['nullable', 'string', 'max:255'],
+            'educational_qualifications.*.institute' => ['nullable', 'string', 'max:255'],
+            'educational_qualifications.*.passing_year' => ['nullable', 'string', 'max:255'],
+            'educational_qualifications.*.board' => ['nullable', 'string', 'max:255'],
+            'educational_qualifications.*.grade' => ['nullable', 'string', 'max:255'],
             'phone' => ['nullable', 'string', 'max:255'],
             'guardian_phone' => ['nullable', 'string', 'max:255'],
+            'guardian_name' => ['nullable', 'string', 'max:255'],
             'email' => ['nullable', 'email', 'max:255'],
             'course' => ['required', 'string', 'max:255'],
+            'duration' => ['nullable', 'string', 'max:255'],
             'admission_date' => ['nullable', 'date'],
             'status' => ['required', Rule::in(['lead', 'admitted', 'active', 'completed', 'dropped'])],
             'address' => ['nullable', 'string'],
             'notes' => ['nullable', 'string'],
+            'batch_id' => ['nullable', 'exists:computer_training_batches,id'],
+            'seat_number' => ['nullable', 'integer', 'min:1', 'max:15', Rule::unique('computer_training_students')->where(function ($query) use ($request) {
+                return $query->where('company_id', $request->user() ? $request->user()->company_id : 1)
+                             ->where('batch_id', $request->batch_id);
+            })],
         ]);
 
         ComputerTrainingStudent::create($this->withCompany($request, $data));
 
         return back()->with('status', 'Student saved.');
+    }
+
+    public function updateStudent(Request $request, ComputerTrainingStudent $student): RedirectResponse
+    {
+        if ($request->user() && $student->company_id !== $request->user()->company_id) {
+            abort(403);
+        }
+
+        $data = $request->validate([
+            'student_id' => ['nullable', 'string', 'max:255'],
+            'name' => ['required', 'string', 'max:255'],
+            'name_bn' => ['nullable', 'string', 'max:255'],
+            'father_name' => ['nullable', 'string', 'max:255'],
+            'mother_name' => ['nullable', 'string', 'max:255'],
+            'date_of_birth' => ['nullable', 'date'],
+            'nid_or_birth_reg' => ['nullable', 'string', 'max:255'],
+            'nationality' => ['nullable', 'string', 'max:255'],
+            'marital_status' => ['nullable', 'string', 'max:255'],
+            'gender' => ['nullable', 'string', 'max:255'],
+            'religion' => ['nullable', 'string', 'max:255'],
+            'educational_qualifications' => ['nullable', 'array'],
+            'educational_qualifications.*.exam_name' => ['nullable', 'string', 'max:255'],
+            'educational_qualifications.*.group' => ['nullable', 'string', 'max:255'],
+            'educational_qualifications.*.institute' => ['nullable', 'string', 'max:255'],
+            'educational_qualifications.*.passing_year' => ['nullable', 'string', 'max:255'],
+            'educational_qualifications.*.board' => ['nullable', 'string', 'max:255'],
+            'educational_qualifications.*.grade' => ['nullable', 'string', 'max:255'],
+            'phone' => ['nullable', 'string', 'max:255'],
+            'guardian_phone' => ['nullable', 'string', 'max:255'],
+            'guardian_name' => ['nullable', 'string', 'max:255'],
+            'email' => ['nullable', 'email', 'max:255'],
+            'course' => ['required', 'string', 'max:255'],
+            'duration' => ['nullable', 'string', 'max:255'],
+            'admission_date' => ['nullable', 'date'],
+            'status' => ['required', Rule::in(['lead', 'admitted', 'active', 'completed', 'dropped'])],
+            'address' => ['nullable', 'string'],
+            'notes' => ['nullable', 'string'],
+            'batch_id' => ['nullable', 'exists:computer_training_batches,id'],
+            'seat_number' => ['nullable', 'integer', 'min:1', 'max:15', Rule::unique('computer_training_students')->where(function ($query) use ($request) {
+                return $query->where('company_id', $request->user() ? $request->user()->company_id : 1)
+                             ->where('batch_id', $request->batch_id);
+            })],
+        ]);
+
+        $student->update($data);
+
+        return back()->with('status', 'Student updated successfully.');
+    }
+
+    public function destroyStudent(Request $request, ComputerTrainingStudent $student): RedirectResponse
+    {
+        if ($request->user() && $student->company_id !== $request->user()->company_id) {
+            abort(403);
+        }
+
+        $student->delete();
+
+        return back()->with('status', 'Student deleted successfully.');
+    }
+
+    public function storeBatch(Request $request): RedirectResponse
+    {
+        $data = $request->validate([
+            'name' => ['required', 'string', 'max:255'],
+            'type' => ['required', 'string', 'in:S,R'],
+            'capacity' => ['required', 'integer', 'min:1'],
+            'status' => ['required', 'string', 'in:active,completed'],
+        ]);
+
+        ComputerTrainingBatch::create($this->withCompany($request, $data));
+
+        return back()->with('status', 'Batch created successfully.')->with('tab', 'batches');
+    }
+
+    public function updateBatch(Request $request, ComputerTrainingBatch $batch): RedirectResponse
+    {
+        if ($request->user() && $batch->company_id !== $request->user()->company_id) {
+            abort(403);
+        }
+
+        $data = $request->validate([
+            'name' => ['required', 'string', 'max:255'],
+            'type' => ['required', 'string', 'in:S,R'],
+            'capacity' => ['required', 'integer', 'min:1'],
+            'status' => ['required', 'string', 'in:active,completed'],
+        ]);
+
+        $batch->update($data);
+
+        return back()->with('status', 'Batch updated successfully.')->with('tab', 'batches');
+    }
+
+    public function destroyBatch(Request $request, ComputerTrainingBatch $batch): RedirectResponse
+    {
+        if ($request->user() && $batch->company_id !== $request->user()->company_id) {
+            abort(403);
+        }
+
+        $batch->delete();
+
+        return back()->with('status', 'Batch deleted successfully.')->with('tab', 'batches');
     }
 
     public function storeAttendance(Request $request): RedirectResponse
@@ -161,6 +279,28 @@ class ComputerTrainingController extends Controller
 
         $lead->update($data);
 
+        if ($data['status'] === 'admitted') {
+            $studentSearchArgs = ['company_id' => $lead->company_id];
+            if (!empty($lead->phone)) {
+                $studentSearchArgs['phone'] = $lead->phone;
+            } else {
+                $studentSearchArgs['name'] = $lead->name;
+            }
+
+            ComputerTrainingStudent::firstOrCreate(
+                $studentSearchArgs,
+                [
+                    'name' => $lead->name,
+                    'phone' => $lead->phone,
+                    'course' => $lead->interested_course ?? 'N/A',
+                    'duration' => $lead->duration,
+                    'status' => 'admitted',
+                    'admission_date' => now()->toDateString(),
+                    'notes' => ltrim(($lead->notes . "\n" . $lead->remarks), "\n"),
+                ]
+            );
+        }
+
         return back()->with('status', 'Student updated successfully.')->with('tab', 'marketing');
     }
 
@@ -272,11 +412,22 @@ class ComputerTrainingController extends Controller
 
                 $commentValue = $commentKey && !empty($data[$commentKey]) ? trim($data[$commentKey]) : null;
                 
+                $validStatuses = ['new', 'contacting', 'interested', 'admitted', 'not interested'];
                 $statusValue = 'new';
+                
                 if (!empty($commentValue)) {
-                    $statusValue = strtolower($commentValue);
+                    $potentialStatus = strtolower($commentValue);
+                    if (in_array($potentialStatus, $validStatuses)) {
+                        $statusValue = $potentialStatus;
+                    } else {
+                        // If it's arbitrary text (like a note), fallback to 'contacting' to avoid MySQL errors.
+                        $statusValue = 'contacting';
+                    }
                 } elseif ($statusKey && !empty($data[$statusKey])) {
-                    $statusValue = strtolower(trim($data[$statusKey]));
+                    $potentialStatus = strtolower(trim($data[$statusKey]));
+                    if (in_array($potentialStatus, $validStatuses)) {
+                        $statusValue = $potentialStatus;
+                    }
                 }
 
                 // Deduplication based on phone if available, otherwise fallback to name
@@ -349,4 +500,91 @@ class ComputerTrainingController extends Controller
             'company_id' => $request->user()?->company_id,
         ];
     }
+
+    public function storeCourse(Request $request): RedirectResponse
+    {
+        $data = $request->validate([
+            'name' => ['required', 'string', 'max:255'],
+            'duration' => ['nullable', 'string', 'max:255'],
+            'fee' => ['nullable', 'numeric', 'min:0'],
+            'status' => ['required', 'string', 'in:active,inactive'],
+        ]);
+
+        ComputerTrainingCourse::create($this->withCompany($request, $data));
+
+        return back()->with('status', 'Course created successfully.')->with('tab', 'batches');
+    }
+
+    public function updateCourse(Request $request, ComputerTrainingCourse $course): RedirectResponse
+    {
+        if ($request->user() && $course->company_id !== $request->user()->company_id) {
+            abort(403);
+        }
+
+        $data = $request->validate([
+            'name' => ['required', 'string', 'max:255'],
+            'duration' => ['nullable', 'string', 'max:255'],
+            'fee' => ['nullable', 'numeric', 'min:0'],
+            'status' => ['required', 'string', 'in:active,inactive'],
+        ]);
+
+        $course->update($data);
+
+        return back()->with('status', 'Course updated successfully.')->with('tab', 'batches');
+    }
+
+    public function destroyCourse(Request $request, ComputerTrainingCourse $course): RedirectResponse
+    {
+        if ($request->user() && $course->company_id !== $request->user()->company_id) {
+            abort(403);
+        }
+
+        $course->delete();
+
+        return back()->with('status', 'Course deleted successfully.')->with('tab', 'batches');
+    }
+    public function getBatchStudents(Request $request, ComputerTrainingBatch $batch)
+    {
+        if ($request->user() && $batch->company_id !== $request->user()->company_id) {
+            abort(403);
+        }
+
+        $students = $batch->students()->orderBy('seat_number')->get(['id', 'name', 'seat_number', 'phone', 'status']);
+        
+        return response()->json([
+            'students' => $students
+        ]);
+    }
+
+    public function storeBulkAttendance(Request $request): RedirectResponse
+    {
+        $data = $request->validate([
+            'batch_id' => ['required', 'exists:computer_training_batches,id'],
+            'attendance_date' => ['required', 'date'],
+            'attendances' => ['required', 'array'],
+            'attendances.*.student_id' => ['required', 'exists:computer_training_students,id'],
+            'attendances.*.status' => ['required', \Illuminate\Validation\Rule::in(['present', 'absent', 'late'])],
+            'attendances.*.daily_rank' => ['nullable', 'integer', 'in:1,2,3'],
+        ]);
+
+        $companyId = $request->user() ? $request->user()->company_id : 1;
+
+        foreach ($data['attendances'] as $att) {
+            \App\Models\ComputerTrainingAttendance::updateOrCreate(
+                [
+                    'company_id' => $companyId,
+                    'student_id' => $att['student_id'],
+                    'attendance_date' => $data['attendance_date']
+                ],
+                [
+                    'status' => $att['status'],
+                    'daily_rank' => $att['daily_rank'] ?? null,
+                ]
+            );
+        }
+
+        return back()->with('status', 'Bulk attendance recorded successfully.')->with('tab', 'attendance');
+    }
 }
+
+

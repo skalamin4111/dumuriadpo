@@ -33,11 +33,23 @@ Route::middleware(['auth', 'active', 'tenant'])->group(function () {
     Route::get('/search', SearchController::class)->name('search');
     Route::get('/calendar', CalendarController::class)->name('calendar');
     Route::post('/services/computer-training/students', [ComputerTrainingController::class, 'storeStudent'])->name('computer-training.students.store');
+    Route::put('/services/computer-training/students/{student}', [ComputerTrainingController::class, 'updateStudent'])->name('computer-training.students.update');
+    Route::delete('/services/computer-training/students/{student}', [ComputerTrainingController::class, 'destroyStudent'])->name('computer-training.students.destroy');
+    Route::post('/services/computer-training/attendance/bulk', [ComputerTrainingController::class, 'storeBulkAttendance'])->name('computer-training.attendance.bulk');
+    Route::get('/services/computer-training/batches/{batch}/students', [ComputerTrainingController::class, 'getBatchStudents'])->name('computer-training.batches.students');
+    
     Route::post('/services/computer-training/attendance', [ComputerTrainingController::class, 'storeAttendance'])->name('computer-training.attendance.store');
     Route::post('/services/computer-training/classes', [ComputerTrainingController::class, 'storeClassSchedule'])->name('computer-training.classes.store');
     Route::post('/services/computer-training/exams', [ComputerTrainingController::class, 'storeExam'])->name('computer-training.exams.store');
     Route::post('/services/computer-training/fees', [ComputerTrainingController::class, 'storeFee'])->name('computer-training.fees.store');
     Route::post('/services/computer-training/marketing', [ComputerTrainingController::class, 'storeMarketingLead'])->name('computer-training.marketing.store');
+    Route::post('/services/computer-training/batches', [ComputerTrainingController::class, 'storeBatch'])->name('computer-training.batches.store');
+    Route::put('/services/computer-training/batches/{batch}', [ComputerTrainingController::class, 'updateBatch'])->name('computer-training.batches.update');
+    Route::delete('/services/computer-training/batches/{batch}', [ComputerTrainingController::class, 'destroyBatch'])->name('computer-training.batches.destroy');
+
+    Route::post('/services/computer-training/courses', [ComputerTrainingController::class, 'storeCourse'])->name('computer-training.courses.store');
+    Route::put('/services/computer-training/courses/{course}', [ComputerTrainingController::class, 'updateCourse'])->name('computer-training.courses.update');
+    Route::delete('/services/computer-training/courses/{course}', [ComputerTrainingController::class, 'destroyCourse'])->name('computer-training.courses.destroy');
     Route::put('/services/computer-training/marketing/{lead}', [ComputerTrainingController::class, 'updateMarketingLead'])->name('computer-training.marketing.update');
     Route::get('/services/computer-training/marketing/export', [ComputerTrainingController::class, 'exportMarketingLead'])->name('computer-training.marketing.export');
     Route::post('/services/computer-training/marketing/import', [ComputerTrainingController::class, 'importMarketingLead'])->name('computer-training.marketing.import');

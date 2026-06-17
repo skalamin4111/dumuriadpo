@@ -8,7 +8,18 @@
 <?php $attributes = $attributes->except(\Illuminate\View\AnonymousComponent::ignoredParameterNames()); ?>
 <?php endif; ?>
 <?php $component->withAttributes(['title' => 'Computer Training']); ?>
-    <div x-data="{ tab: '<?php echo e(session('tab', old('tab', request('tab', 'students')))); ?>', marketingLead: null }" class="space-y-5">
+    <div x-data="{ 
+    tab: '<?php echo e(session('tab', old('tab', request('tab', 'students')))); ?>', 
+    marketingLead: null, 
+    student: null, 
+    viewStudent: null,
+    getTakenSeats() {
+        if (!this.student || !this.student.batch_id) return [];
+        let batch = <?php echo e(Js::from($batches)); ?>.find(b => b.id == this.student.batch_id);
+        if (!batch || !batch.students) return [];
+        return batch.students.filter(s => s.id !== this.student.id).map(s => s.seat_number).filter(n => n !== null);
+    }
+}" class="space-y-5">
         <section class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
             <div class="surface p-4">
                 <p class="text-sm text-slate-500 dark:text-slate-400">Active students</p>
@@ -39,6 +50,7 @@
             <div class="flex gap-1 overflow-x-auto">
                 <?php $__currentLoopData = [
                     'students' => 'Students',
+                    'batches' => 'Batches',
                     'attendance' => 'Attendance',
                     'classes' => 'Class Schedule',
                     'exams' => 'Class Exam',
@@ -52,52 +64,359 @@
             </div>
         </section>
 
-        <section x-show="tab === 'students'" class="grid gap-5 xl:grid-cols-[24rem_1fr]">
-            <form method="POST" action="<?php echo e(route('computer-training.students.store')); ?>" class="surface p-5">
-                <?php echo csrf_field(); ?>
-                <h2 class="mb-4 font-semibold">Student database</h2>
-                <div class="space-y-3">
-                    <input class="field" name="student_id" value="<?php echo e(old('student_id')); ?>" placeholder="Student ID">
-                    <input class="field" name="name" value="<?php echo e(old('name')); ?>" placeholder="Student name" required>
-                    <input class="field" name="phone" value="<?php echo e(old('phone')); ?>" placeholder="Phone">
-                    <input class="field" name="guardian_phone" value="<?php echo e(old('guardian_phone')); ?>" placeholder="Guardian phone">
-                    <input class="field" name="email" value="<?php echo e(old('email')); ?>" type="email" placeholder="Email">
-                    <select class="field" name="course" required>
-                        <option value="">Course</option>
-                        <?php $__currentLoopData = $courses; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $course): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
-                            <option value="<?php echo e($course); ?>" <?php if(old('course') === $course): echo 'selected'; endif; ?>><?php echo e($course); ?></option>
-                        <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
-                    </select>
-                    <input class="field" name="admission_date" type="date" value="<?php echo e(old('admission_date', now()->toDateString())); ?>">
-                    <select class="field" name="status">
-                        <?php $__currentLoopData = ['lead', 'admitted', 'active', 'completed', 'dropped']; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $status): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
-                            <option value="<?php echo e($status); ?>" <?php if(old('status', 'admitted') === $status): echo 'selected'; endif; ?>><?php echo e(ucfirst($status)); ?></option>
-                        <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
-                    </select>
-                    <textarea class="field" name="address" placeholder="Address"><?php echo e(old('address')); ?></textarea>
-                    <textarea class="field" name="notes" placeholder="Notes"><?php echo e(old('notes')); ?></textarea>
-                    <button class="btn btn-primary w-full">Save student</button>
+        <section x-show="tab === 'students'" class="grid gap-5">
+            <template x-teleport="body">
+                <div x-show="student !== null" 
+                     class="fixed inset-0 z-[100] overflow-y-auto bg-slate-950/60 backdrop-blur-sm" 
+                     style="display:none"
+                     x-transition.opacity>
+                    <div class="flex min-h-full items-start justify-center p-4 sm:p-6 md:py-12" @click.self="student = null">
+                        <div class="w-full max-w-4xl bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 relative" 
+                             x-transition:enter="transition ease-out duration-300" 
+                             x-transition:enter-start="opacity-0 scale-95 translate-y-4 sm:translate-y-0" 
+                             x-transition:enter-end="opacity-100 scale-100 translate-y-0" 
+                             x-transition:leave="transition ease-in duration-200" 
+                             x-transition:leave-start="opacity-100 scale-100 translate-y-0" 
+                             x-transition:leave-end="opacity-0 scale-95 translate-y-4 sm:translate-y-0">
+                            <form method="POST" :action="student && student.id ? '<?php echo e(url('/services/computer-training/students')); ?>/' + student.id : '<?php echo e(route('computer-training.students.store')); ?>'" class="p-6 md:p-8">
+                            <?php echo csrf_field(); ?>
+                            <input type="hidden" name="_method" :value="student && student.id ? 'PUT' : 'POST'">
+                            <h2 class="mb-6 font-semibold text-xl flex justify-between items-center pb-4 border-b border-slate-200 dark:border-slate-800">
+                                <span x-text="student && student.id ? 'কম্পিউটার প্রশিক্ষণ কোর্সে ভর্তির তথ্য আপডেট (Edit Student)' : 'কম্পিউটার প্রশিক্ষণ কোর্সে ভর্তির আবেদন ফরম (Add New Student)'"></span>
+                                <button type="button" @click="student = null" class="text-slate-400 hover:text-slate-600 transition">
+                                    <svg class="size-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                                </button>
+                            </h2>
+                            <div class="space-y-6">
+                                
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div class="space-y-2">
+                                        <label class="text-sm font-medium text-slate-700 dark:text-slate-300">আবেদনকারীর নাম (ইংরেজীতে) / Name (English)</label>
+                                        <input class="field" name="name" x-model="student.name" placeholder="Enter full name in English" required>
+                                    </div>
+                                    <div class="space-y-2">
+                                        <label class="text-sm font-medium text-slate-700 dark:text-slate-300">আবেদনকারীর নাম (বাংলায়) / Name (Bengali)</label>
+                                        <input class="field" name="name_bn" x-model="student.name_bn" placeholder="বাংলায় নাম লিখুন">
+                                    </div>
+                                    <div class="space-y-2">
+                                        <label class="text-sm font-medium text-slate-700 dark:text-slate-300">পিতার নাম / Father's Name</label>
+                                        <input class="field" name="father_name" x-model="student.father_name" placeholder="Father's name">
+                                    </div>
+                                    <div class="space-y-2">
+                                        <label class="text-sm font-medium text-slate-700 dark:text-slate-300">মাতার নাম / Mother's Name</label>
+                                        <input class="field" name="mother_name" x-model="student.mother_name" placeholder="Mother's name">
+                                    </div>
+                                    <div class="space-y-2">
+                                        <label class="text-sm font-medium text-slate-700 dark:text-slate-300">জন্ম তারিখ / Date of Birth</label>
+                                        <input class="field" type="date" name="date_of_birth" x-model="student.date_of_birth">
+                                    </div>
+                                    <div class="space-y-2">
+                                        <label class="text-sm font-medium text-slate-700 dark:text-slate-300">জাতীয় পরিচয় পত্র/জন্ম নিবন্ধন / NID/Birth Reg.</label>
+                                        <input class="field" name="nid_or_birth_reg" x-model="student.nid_or_birth_reg" placeholder="NID or Birth Reg No">
+                                    </div>
+                                    <div class="space-y-2">
+                                        <label class="text-sm font-medium text-slate-700 dark:text-slate-300">মোবাইল নম্বর / Mobile No</label>
+                                        <input class="field" name="phone" x-model="student.phone" placeholder="Phone">
+                                    </div>
+                                    <div class="space-y-2">
+                                        <label class="text-sm font-medium text-slate-700 dark:text-slate-300">ই-মেইল / Email</label>
+                                        <input class="field" type="email" name="email" x-model="student.email" placeholder="Email (if any)">
+                                    </div>
+                                    <div class="space-y-2 md:col-span-2">
+                                        <label class="text-sm font-medium text-slate-700 dark:text-slate-300">বর্তমান ঠিকানা / Present Address</label>
+                                        <textarea class="field" name="address" placeholder="Present Address" rows="2" x-model="student.address"></textarea>
+                                    </div>
+                                </div>
+
+                                <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                                    <div class="space-y-2">
+                                        <label class="text-sm font-medium text-slate-700 dark:text-slate-300">জাতীয়তা / Nationality</label>
+                                        <input class="field" name="nationality" x-model="student.nationality">
+                                    </div>
+                                    <div class="space-y-2">
+                                        <label class="text-sm font-medium text-slate-700 dark:text-slate-300">জেন্ডার / Gender</label>
+                                        <select class="field" name="gender" x-model="student.gender">
+                                            <option value="">Select</option>
+                                            <option value="Male" == 'Male')>পুরুষ / Male</option>
+                                            <option value="Female" == 'Female')>মহিলা / Female</option>
+                                            <option value="Other" == 'Other')>অন্যান্য / Other</option>
+                                        </select>
+                                    </div>
+                                    <div class="space-y-2">
+                                        <label class="text-sm font-medium text-slate-700 dark:text-slate-300">বৈবাহিক অবস্থা / Marital Status</label>
+                                        <select class="field" name="marital_status" x-model="student.marital_status">
+                                            <option value="">Select</option>
+                                            <option value="Married" == 'Married')>বিবাহিত / Married</option>
+                                            <option value="Unmarried" == 'Unmarried')>অবিবাহিত / Unmarried</option>
+                                        </select>
+                                    </div>
+                                    <div class="space-y-2">
+                                        <label class="text-sm font-medium text-slate-700 dark:text-slate-300">ধর্ম / Religion</label>
+                                        <select class="field" name="religion" x-model="student.religion">
+                                            <option value="">Select</option>
+                                            <option value="Islam" == 'Islam')>ইসলাম / Islam</option>
+                                            <option value="Hindu" == 'Hindu')>হিন্দু / Hindu</option>
+                                            <option value="Christian" == 'Christian')>খ্রিস্টান / Christian</option>
+                                            <option value="Other" == 'Other')>অন্যান্য / Other</option>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <div class="space-y-2">
+                                    <label class="text-sm font-medium text-slate-700 dark:text-slate-300">শিক্ষাগত যোগ্যতা / Educational Qualifications</label>
+                                    <div class="border border-slate-200 dark:border-slate-800 rounded-lg overflow-x-auto">
+                                        <table class="w-full text-left text-sm whitespace-nowrap">
+                                            <thead class="bg-slate-50 dark:bg-slate-800/50">
+                                                <tr>
+                                                    <th class="px-3 py-2 font-medium">পরীক্ষার নাম (Exam)</th>
+                                                    <th class="px-3 py-2 font-medium">বিভাগ (Group)</th>
+                                                    <th class="px-3 py-2 font-medium">শিক্ষা প্রতিষ্ঠান (Institute)</th>
+                                                    <th class="px-3 py-2 font-medium">পাসের সন (Year)</th>
+                                                    <th class="px-3 py-2 font-medium">বোর্ড/বিশ্ববিদ্যালয় (Board)</th>
+                                                    <th class="px-3 py-2 font-medium">গ্রেড/শ্রেণী (Grade)</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody class="divide-y divide-slate-200 dark:divide-slate-800">
+                                                <?php for($i = 0; $i < 2; $i++): ?>
+                                                <tr>
+                                                    <td class="p-2 border-r border-slate-200 dark:border-slate-800"><input class="field py-1.5 px-2 text-sm bg-transparent border-none shadow-none" name="educational_qualifications[<?php echo e($i); ?>][exam_name]" x-model="student.educational_qualifications[<?php echo e($i); ?>].exam_name" placeholder="Exam"></td>
+                                                    <td class="p-2 border-r border-slate-200 dark:border-slate-800"><input class="field py-1.5 px-2 text-sm bg-transparent border-none shadow-none" name="educational_qualifications[<?php echo e($i); ?>][group]" x-model="student.educational_qualifications[<?php echo e($i); ?>].group" placeholder="Group"></td>
+                                                    <td class="p-2 border-r border-slate-200 dark:border-slate-800"><input class="field py-1.5 px-2 text-sm bg-transparent border-none shadow-none" name="educational_qualifications[<?php echo e($i); ?>][institute]" x-model="student.educational_qualifications[<?php echo e($i); ?>].institute" placeholder="Institute"></td>
+                                                    <td class="p-2 border-r border-slate-200 dark:border-slate-800"><input class="field py-1.5 px-2 text-sm bg-transparent border-none shadow-none" name="educational_qualifications[<?php echo e($i); ?>][passing_year]" x-model="student.educational_qualifications[<?php echo e($i); ?>].passing_year" placeholder="Year"></td>
+                                                    <td class="p-2 border-r border-slate-200 dark:border-slate-800"><input class="field py-1.5 px-2 text-sm bg-transparent border-none shadow-none" name="educational_qualifications[<?php echo e($i); ?>][board]" x-model="student.educational_qualifications[<?php echo e($i); ?>].board" placeholder="Board"></td>
+                                                    <td class="p-2"><input class="field py-1.5 px-2 text-sm bg-transparent border-none shadow-none" name="educational_qualifications[<?php echo e($i); ?>][grade]" x-model="student.educational_qualifications[<?php echo e($i); ?>].grade" placeholder="Grade"></td>
+                                                </tr>
+                                                <?php endfor; ?>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div class="space-y-2">
+                                        <label class="text-sm font-medium text-slate-700 dark:text-slate-300">ব্যাচ / Batch</label>
+                                        <select class="field" name="batch_id" x-model="student.batch_id" @change="student.seat_number = ''">
+                                            <option value="">Select Batch</option>
+                                            <?php $__currentLoopData = $batches; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $b): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                                                <option value="<?php echo e($b->id); ?>"><?php echo e($b->name); ?> (<?php echo e($b->type); ?>) - <?php echo e($b->students_count); ?>/<?php echo e($b->capacity); ?></option>
+                                            <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+                                        </select>
+                                    </div>
+                                    <div class="space-y-2" x-show="student.batch_id">
+                                        <label class="text-sm font-medium text-slate-700 dark:text-slate-300">আসন নং / Seat No</label>
+                                        <select class="field" name="seat_number" x-model="student.seat_number" :required="student.batch_id ? true : false">
+                                            <option value="">Select Seat</option>
+                                            <template x-for="seat in 15" :key="seat">
+                                                <option :value="seat" :disabled="getTakenSeats().includes(seat)" x-text="`Seat ${seat} ${getTakenSeats().includes(seat) ? '(Taken)' : '(Available)'}`"></option>
+                                            </template>
+                                        </select>
+                                    </div>
+                                    <div class="space-y-2">
+                                        <label class="text-sm font-medium text-slate-700 dark:text-slate-300">প্রশিক্ষণ কোর্সের নাম / Course Name</label>
+                                        <select class="field" name="course" x-model="student.course" required>
+                                            <option value="">Select Course</option>
+                                            <?php $__currentLoopData = $courses; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $course): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                                                <option value="<?php echo e($course); ?>" === $course)><?php echo e($course); ?></option>
+                                            <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+                                        </select>
+                                    </div>
+                                    <div class="space-y-2">
+                                        <label class="text-sm font-medium text-slate-700 dark:text-slate-300">প্রশিক্ষণকাল / Duration</label>
+                                        <input class="field" name="duration" x-model="student.duration" placeholder="e.g., 6 Months">
+                                    </div>
+                                    <div class="space-y-2">
+                                        <label class="text-sm font-medium text-slate-700 dark:text-slate-300">ভর্তির তারিখ / Admission Date</label>
+                                        <input class="field" name="admission_date" type="date" x-model="student.admission_date">
+                                    </div>
+                                    <div class="space-y-2">
+                                        <label class="text-sm font-medium text-slate-700 dark:text-slate-300">ক্রমিক নং / Serial No (Student ID)</label>
+                                        <input class="field" name="student_id" x-model="student.student_id" placeholder="Optional custom ID">
+                                    </div>
+                                </div>
+
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div class="space-y-2">
+                                        <label class="text-sm font-medium text-slate-700 dark:text-slate-300">অভিভাবকের নাম / Guardian's Name</label>
+                                        <input class="field" name="guardian_name" x-model="student.guardian_name" placeholder="Guardian's name">
+                                    </div>
+                                    <div class="space-y-2">
+                                        <label class="text-sm font-medium text-slate-700 dark:text-slate-300">অভিভাবকের মোবাইল / Guardian Mobile</label>
+                                        <input class="field" name="guardian_phone" x-model="student.guardian_phone" placeholder="Guardian's mobile">
+                                    </div>
+                                </div>
+
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4 border-t border-slate-200 dark:border-slate-800 mt-6">
+                                    <div class="space-y-2">
+                                        <label class="text-sm font-medium text-slate-700 dark:text-slate-300">Office Status</label>
+                                        <select class="field" name="status" x-model="student.status">
+                                            <?php $__currentLoopData = ['lead', 'admitted', 'active', 'completed', 'dropped']; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $status): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                                                <option value="<?php echo e($status); ?>" === $status)><?php echo e(ucfirst($status)); ?></option>
+                                            <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+                                        </select>
+                                    </div>
+                                    <div class="space-y-2">
+                                        <label class="text-sm font-medium text-slate-700 dark:text-slate-300">Office Notes</label>
+                                        <input class="field" name="notes" x-model="student.notes" placeholder="Internal notes">
+                                    </div>
+                                </div>
+                                
+                                <button class="btn btn-primary w-full py-3 mt-4 text-base font-semibold" x-text="student && student.id ? 'Update student record' : 'Save student record'"></button>
+                            </div>
+                        </form>
+                    </div>
                 </div>
-            </form>
+            </template>
 
             <div class="surface overflow-hidden flex flex-col h-full">
-                <div class="flex items-center justify-between p-4 border-b border-slate-200 dark:border-slate-800">
+                
+            <!-- View Student Details Modal -->
+            <template x-teleport="body">
+                <div x-show="viewStudent !== null" 
+                     class="fixed inset-0 z-[100] overflow-y-auto bg-slate-950/60 backdrop-blur-sm" 
+                     style="display:none"
+                     x-transition.opacity>
+                    <div class="flex min-h-full items-start justify-center p-4 sm:p-6 md:py-12" @click.self="viewStudent = null">
+                        <div class="w-full max-w-3xl bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 relative p-6 md:p-8"
+                             x-transition:enter="transition ease-out duration-300" 
+                             x-transition:enter-start="opacity-0 scale-95 translate-y-4" 
+                             x-transition:enter-end="opacity-100 scale-100 translate-y-0" 
+                             x-transition:leave="transition ease-in duration-200" 
+                             x-transition:leave-start="opacity-100 scale-100 translate-y-0" 
+                             x-transition:leave-end="opacity-0 scale-95 translate-y-4">
+                            
+                            <h2 class="mb-6 font-semibold text-xl flex justify-between items-center pb-4 border-b border-slate-200 dark:border-slate-800">
+                                <span>Student Details: <span x-text="viewStudent?.name" class="text-teal-600"></span></span>
+                                <button type="button" @click="viewStudent = null" class="text-slate-400 hover:text-slate-600 transition">
+                                    <svg class="size-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                                </button>
+                            </h2>
+
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6" x-if="viewStudent">
+                                
+                                <div class="space-y-4">
+                                    <h3 class="font-medium text-lg text-slate-800 dark:text-slate-200 border-b pb-2">Basic Info</h3>
+                                    <div class="grid grid-cols-3 gap-2 text-sm">
+                                        <div class="text-slate-500">Student ID:</div><div class="col-span-2 font-medium" x-text="viewStudent?.student_id || 'N/A'"></div>
+                                        <div class="text-slate-500">Name:</div><div class="col-span-2 font-medium" x-text="viewStudent?.name"></div>
+                                        <div class="text-slate-500">Name (BN):</div><div class="col-span-2 font-medium" x-text="viewStudent?.name_bn || 'N/A'"></div>
+                                        <div class="text-slate-500">Father's Name:</div><div class="col-span-2 font-medium" x-text="viewStudent?.father_name || 'N/A'"></div>
+                                        <div class="text-slate-500">Mother's Name:</div><div class="col-span-2 font-medium" x-text="viewStudent?.mother_name || 'N/A'"></div>
+                                        <div class="text-slate-500">Date of Birth:</div><div class="col-span-2 font-medium" x-text="viewStudent?.date_of_birth ? new Date(viewStudent.date_of_birth).toLocaleDateString('en-GB') : 'N/A'"></div>
+                                        <div class="text-slate-500">Gender:</div><div class="col-span-2 font-medium" x-text="viewStudent?.gender || 'N/A'"></div>
+                                        <div class="text-slate-500">Religion:</div><div class="col-span-2 font-medium" x-text="viewStudent?.religion || 'N/A'"></div>
+                                        <div class="text-slate-500">Marital Status:</div><div class="col-span-2 font-medium" x-text="viewStudent?.marital_status || 'N/A'"></div>
+                                    </div>
+                                </div>
+
+                                <div class="space-y-4">
+                                    <h3 class="font-medium text-lg text-slate-800 dark:text-slate-200 border-b pb-2">Contact & Course</h3>
+                                    <div class="grid grid-cols-3 gap-2 text-sm">
+                                        <div class="text-slate-500">Phone:</div><div class="col-span-2 font-medium" x-text="viewStudent?.phone || 'N/A'"></div>
+                                        <div class="text-slate-500">Email:</div><div class="col-span-2 font-medium" x-text="viewStudent?.email || 'N/A'"></div>
+                                        <div class="text-slate-500">Guardian Name:</div><div class="col-span-2 font-medium" x-text="viewStudent?.guardian_name || 'N/A'"></div>
+                                        <div class="text-slate-500">Guardian Phone:</div><div class="col-span-2 font-medium" x-text="viewStudent?.guardian_phone || 'N/A'"></div>
+                                        <div class="text-slate-500">Address:</div><div class="col-span-2 font-medium" x-text="viewStudent?.address || 'N/A'"></div>
+                                        <div class="col-span-3 my-2 border-t border-slate-100 dark:border-slate-800"></div>
+                                        <div class="text-slate-500">Course:</div><div class="col-span-2 font-medium" x-text="viewStudent?.course || 'N/A'"></div>
+                                        <div class="text-slate-500">Batch:</div><div class="col-span-2 font-medium" x-text="viewStudent?.batch?.name || 'Unassigned'"></div>
+                                        <div class="text-slate-500">Seat Number:</div><div class="col-span-2 font-medium" x-text="viewStudent?.seat_number || 'N/A'"></div>
+                                        <div class="text-slate-500">Duration:</div><div class="col-span-2 font-medium" x-text="viewStudent?.duration || 'N/A'"></div>
+                                        <div class="text-slate-500">Admission Date:</div><div class="col-span-2 font-medium" x-text="viewStudent?.admission_date ? new Date(viewStudent.admission_date).toLocaleDateString('en-GB') : 'N/A'"></div>
+                                        <div class="text-slate-500">Status:</div>
+                                        <div class="col-span-2">
+                                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-slate-100 text-slate-800" x-text="viewStudent?.status ? viewStudent.status.charAt(0).toUpperCase() + viewStudent.status.slice(1) : 'N/A'"></span>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="col-span-1 md:col-span-2 space-y-4" x-show="viewStudent?.educational_qualifications && viewStudent.educational_qualifications.length > 0">
+                                    <h3 class="font-medium text-lg text-slate-800 dark:text-slate-200 border-b pb-2">Educational Qualifications</h3>
+                                    <div class="border border-slate-200 dark:border-slate-800 rounded-lg overflow-hidden">
+                                        <table class="w-full text-left text-sm whitespace-nowrap">
+                                            <thead class="bg-slate-50 dark:bg-slate-800/50">
+                                                <tr>
+                                                    <th class="px-3 py-2 font-medium">Exam Name</th>
+                                                    <th class="px-3 py-2 font-medium">Group</th>
+                                                    <th class="px-3 py-2 font-medium">Institute</th>
+                                                    <th class="px-3 py-2 font-medium">Passing Year</th>
+                                                    <th class="px-3 py-2 font-medium">Board</th>
+                                                    <th class="px-3 py-2 font-medium">Grade</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody class="divide-y divide-slate-200 dark:divide-slate-800">
+                                                <template x-for="(eq, index) in viewStudent?.educational_qualifications" :key="index">
+                                                    <tr x-show="eq.exam_name">
+                                                        <td class="px-3 py-2" x-text="eq.exam_name"></td>
+                                                        <td class="px-3 py-2" x-text="eq.group"></td>
+                                                        <td class="px-3 py-2" x-text="eq.institute"></td>
+                                                        <td class="px-3 py-2" x-text="eq.passing_year"></td>
+                                                        <td class="px-3 py-2" x-text="eq.board"></td>
+                                                        <td class="px-3 py-2" x-text="eq.grade"></td>
+                                                    </tr>
+                                                </template>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                                
+                                <div class="col-span-1 md:col-span-2 space-y-2" x-show="viewStudent?.notes">
+                                    <h3 class="font-medium text-lg text-slate-800 dark:text-slate-200 border-b pb-2">Notes</h3>
+                                    <p class="text-sm text-slate-600 dark:text-slate-400 p-3 bg-slate-50 dark:bg-slate-800/50 rounded-lg whitespace-pre-wrap" x-text="viewStudent?.notes"></p>
+                                </div>
+
+                            </div>
+                            
+                            <div class="mt-8 flex justify-end">
+                                <button type="button" @click="viewStudent = null" class="btn btn-secondary">Close</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </template>
+
+<div class="flex flex-col gap-4 sm:flex-row sm:items-center justify-between p-4 border-b border-slate-200 dark:border-slate-800">
                     <h3 class="font-semibold text-slate-800 dark:text-slate-200">Student List</h3>
-                    <form method="GET" action="<?php echo e(url()->current()); ?>" class="flex items-center gap-2">
-                        <input type="hidden" name="tab" value="students">
-                        <select name="per_page" onchange="this.form.submit()" class="field text-sm py-1.5 pl-3 pr-8 w-auto">
-                            <option value="10" <?php if(request('per_page') == 10): echo 'selected'; endif; ?>>10 per page</option>
-                            <option value="25" <?php if(request('per_page') == 25): echo 'selected'; endif; ?>>25 per page</option>
-                            <option value="50" <?php if(request('per_page') == 50): echo 'selected'; endif; ?>>50 per page</option>
-                            <option value="100" <?php if(request('per_page') == 100): echo 'selected'; endif; ?>>100 per page</option>
-                        </select>
-                    </form>
+                    <div class="flex flex-wrap items-center gap-3">
+                        <button type="button" @click="student = { id: null, name: '', name_bn: '', father_name: '', mother_name: '', date_of_birth: '', nid_or_birth_reg: '', nationality: 'Bangladeshi', gender: '', marital_status: '', religion: '', educational_qualifications: [{}, {}], course: '', duration: '', admission_date: '<?php echo e(now()->toDateString()); ?>', student_id: '', guardian_name: '', guardian_phone: '', status: 'admitted', notes: '', address: '', phone: '', email: '', batch_id: '', seat_number: '' }" class="btn btn-primary shrink-0">Add New Student</button>
+                        <form method="GET" action="<?php echo e(url()->current()); ?>" class="flex items-center gap-2">
+                            <input type="hidden" name="tab" value="students">
+                            <select name="per_page" onchange="this.form.submit()" class="field text-sm py-1.5 pl-3 pr-8 w-auto">
+                                <option value="10" <?php if(request('per_page') == 10): echo 'selected'; endif; ?>>10 per page</option>
+                                <option value="25" <?php if(request('per_page') == 25): echo 'selected'; endif; ?>>25 per page</option>
+                                <option value="50" <?php if(request('per_page') == 50): echo 'selected'; endif; ?>>50 per page</option>
+                                <option value="100" <?php if(request('per_page') == 100): echo 'selected'; endif; ?>>100 per page</option>
+                            </select>
+                        </form>
+                    </div>
                 </div>
                 <table class="w-full text-left text-sm">
-                    <thead class="table-head"><tr><th class="px-4 py-3">Student</th><th class="px-4 py-3">Course</th><th class="px-4 py-3">Phone</th><th class="px-4 py-3">Status</th></tr></thead>
+                    <thead class="table-head"><tr><th class="px-4 py-3">Student</th><th class="px-4 py-3">Course</th><th class="px-4 py-3">Phone</th><th class="px-4 py-3">Status</th><th class="px-4 py-3 text-right">Actions</th></tr></thead>
                     <tbody class="divide-y divide-slate-200 dark:divide-slate-800">
                         <?php $__empty_1 = true; $__currentLoopData = $students; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $student): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); $__empty_1 = false; ?>
-                            <tr class="table-row"><td class="px-4 py-3 font-medium"><?php echo e($student->name); ?><span class="block text-xs text-slate-500"><?php echo e($student->student_id); ?></span></td><td class="px-4 py-3"><?php echo e($student->course); ?></td><td class="px-4 py-3"><?php echo e($student->phone ?? 'N/A'); ?></td><td class="px-4 py-3"><?php echo e(ucfirst($student->status)); ?></td></tr>
+                            <tr class="table-row cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800/50" @click="viewStudent = <?php echo e(Js::from($student)); ?>">
+                            <td class="px-4 py-3 font-medium">
+                                <?php echo e($student->name); ?>
+
+                                <span class="block text-xs text-slate-500">
+                                    <?php echo e($student->student_id); ?> 
+                                    <?php if($student->batch): ?> &bull; <span class="font-medium text-teal-600"><?php echo e($student->batch->name); ?> (Seat: <?php echo e($student->seat_number ?? 'N/A'); ?>)</span> <?php endif; ?>
+                                </span>
+                            </td>
+                            <td class="px-4 py-3"><?php echo e($student->course); ?></td>
+                            <td class="px-4 py-3"><?php echo e($student->phone ?? 'N/A'); ?></td>
+                            <td class="px-4 py-3"><?php echo e(ucfirst($student->status)); ?></td>
+                            <td class="px-4 py-3 text-right">
+                                <div class="flex items-center justify-end gap-2">
+                                    <button type="button" @click.stop="viewStudent = <?php echo e(Js::from($student)); ?>" class="text-indigo-600 hover:text-indigo-800 transition" title="View Details"><svg class="size-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg></button>
+                                    <button type="button" @click.stop="student = Object.assign({}, <?php echo e(Js::from($student)); ?>, { educational_qualifications: (<?php echo e(Js::from($student)); ?>.educational_qualifications || []).concat([{}, {}]).slice(0, 2) })" class="text-teal-600 hover:text-teal-800 transition"><svg class="size-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg></button>
+                                    <form method="POST" action="<?php echo e(route('computer-training.students.destroy', $student)); ?>" onsubmit="return confirm('Are you sure you want to delete this student?')">
+                                        <?php echo csrf_field(); ?>
+                                        <?php echo method_field('DELETE'); ?>
+                                        <button type="submit" @click.stop class="text-rose-600 hover:text-rose-800 transition"><svg class="size-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg></button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
                         <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); if ($__empty_1): ?>
                             <tr><td class="px-4 py-5 text-center text-slate-500" colspan="4">No students found.</td></tr>
                         <?php endif; ?>
@@ -107,27 +426,662 @@
             <div class="mt-4"><?php echo e($students->appends(['tab' => 'students'])->links()); ?></div>
         </section>
 
-        <section x-show="tab === 'attendance'" class="grid gap-5 xl:grid-cols-[24rem_1fr]">
-            <form method="POST" action="<?php echo e(route('computer-training.attendance.store')); ?>" class="surface p-5">
-                <?php echo csrf_field(); ?>
-                <h2 class="mb-4 font-semibold">Attendance</h2>
-                <div class="space-y-3">
-                    <select class="field" name="student_id" required><option value="">Student</option><?php $__currentLoopData = $students; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $student): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?><option value="<?php echo e($student->id); ?>"><?php echo e($student->name); ?></option><?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?></select>
-                    <select class="field" name="class_schedule_id"><option value="">Class</option><?php $__currentLoopData = $classSchedules; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $class): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?><option value="<?php echo e($class->id); ?>"><?php echo e($class->batch_name); ?> - <?php echo e($class->class_date->format('M j')); ?></option><?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?></select>
-                    <input class="field" name="attendance_date" type="date" value="<?php echo e(now()->toDateString()); ?>" required>
-                    <select class="field" name="status"><option value="present">Present</option><option value="absent">Absent</option><option value="late">Late</option></select>
-                    <textarea class="field" name="remarks" placeholder="Remarks"></textarea>
-                    <button class="btn btn-primary w-full">Record attendance</button>
+        
+        <section x-show="tab === 'batches'" class="grid gap-5" x-data="{ activeSubTab: 'batches' }">
+            
+            <div class="flex items-center gap-2 border-b border-slate-200 dark:border-slate-800 pb-2">
+                <button type="button" @click="activeSubTab = 'batches'" :class="activeSubTab === 'batches' ? 'bg-teal-50 dark:bg-teal-500/10 text-teal-600 dark:text-teal-400 font-medium' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/50 hover:text-slate-900 dark:hover:text-slate-200'" class="px-4 py-2 rounded-lg text-sm transition whitespace-nowrap">Batch Management</button>
+                <button type="button" @click="activeSubTab = 'courses'" :class="activeSubTab === 'courses' ? 'bg-teal-50 dark:bg-teal-500/10 text-teal-600 dark:text-teal-400 font-medium' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/50 hover:text-slate-900 dark:hover:text-slate-200'" class="px-4 py-2 rounded-lg text-sm transition whitespace-nowrap">Course Management</button>
+            </div>
+
+            <!-- Batch Management -->
+            <div x-show="activeSubTab === 'batches'" x-data="{ batch: null, viewBatch: null }" class="surface overflow-hidden flex flex-col h-full">
+                
+                <!-- Batch Modal -->
+                <template x-teleport="body">
+                    <div x-show="batch !== null" 
+                         class="fixed inset-0 z-[100] overflow-y-auto bg-slate-950/60 backdrop-blur-sm" 
+                         style="display:none"
+                         x-transition.opacity>
+                        <div class="flex min-h-full items-start justify-center p-4 sm:p-6 md:py-12" @click.self="batch = null">
+                            <div class="w-full max-w-md bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 relative">
+                                <form method="POST" :action="batch && batch.id ? '<?php echo e(url('/services/computer-training/batches')); ?>/' + batch.id : '<?php echo e(route('computer-training.batches.store')); ?>'" class="p-6">
+                                    <?php echo csrf_field(); ?>
+                                    <input type="hidden" name="_method" :value="batch && batch.id ? 'PUT' : 'POST'">
+                                    
+                                    <h2 class="mb-4 font-semibold text-lg flex justify-between items-center pb-4 border-b border-slate-200 dark:border-slate-800">
+                                        <span x-text="batch && batch.id ? 'Edit Batch' : 'Add New Batch'"></span>
+                                        <button type="button" @click="batch = null" class="text-slate-400 hover:text-slate-600 transition">
+                                            <svg class="size-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                                        </button>
+                                    </h2>
+
+                                    <div class="space-y-4">
+                                        <div class="space-y-2">
+                                            <label class="text-sm font-medium text-slate-700 dark:text-slate-300">Batch Name</label>
+                                            <input class="field" name="name" x-model="batch.name" placeholder="e.g. S-9, R-9" required>
+                                        </div>
+                                        <div class="space-y-2">
+                                            <label class="text-sm font-medium text-slate-700 dark:text-slate-300">Type</label>
+                                            <select class="field" name="type" x-model="batch.type" required>
+                                                <option value="S">S - Batch</option>
+                                                <option value="R">R - Batch</option>
+                                            </select>
+                                        </div>
+                                        <div class="space-y-2">
+                                            <label class="text-sm font-medium text-slate-700 dark:text-slate-300">Capacity</label>
+                                            <input type="number" class="field" name="capacity" x-model="batch.capacity" required>
+                                        </div>
+                                        <div class="space-y-2">
+                                            <label class="text-sm font-medium text-slate-700 dark:text-slate-300">Status</label>
+                                            <select class="field" name="status" x-model="batch.status" required>
+                                                <option value="active">Active</option>
+                                                <option value="completed">Completed</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    
+                                    <button class="btn btn-primary w-full py-3 mt-6 text-base font-semibold" x-text="batch && batch.id ? 'Update Batch' : 'Save Batch'"></button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </template>
+
+                
+                <!-- View Batch Details Modal -->
+                <template x-teleport="body">
+                    <div x-show="viewBatch !== null" 
+                         class="fixed inset-0 z-[100] overflow-y-auto bg-slate-950/60 backdrop-blur-sm" 
+                         style="display:none"
+                         x-transition.opacity>
+                        <div class="flex min-h-full items-start justify-center p-4 sm:p-6 md:py-12" @click.self="viewBatch = null">
+                            <div class="w-full max-w-4xl bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 relative p-6 md:p-8"
+                                 x-transition:enter="transition ease-out duration-300" 
+                                 x-transition:enter-start="opacity-0 scale-95 translate-y-4" 
+                                 x-transition:enter-end="opacity-100 scale-100 translate-y-0" 
+                                 x-transition:leave="transition ease-in duration-200" 
+                                 x-transition:leave-start="opacity-100 scale-100 translate-y-0" 
+                                 x-transition:leave-end="opacity-0 scale-95 translate-y-4">
+                                
+                                <h2 class="mb-6 font-semibold text-xl flex justify-between items-center pb-4 border-b border-slate-200 dark:border-slate-800">
+                                    <span>Batch Enrolled Students: <span x-text="viewBatch?.name" class="text-teal-600"></span> (<span x-text="viewBatch?.type"></span>)</span>
+                                    <button type="button" @click="viewBatch = null" class="text-slate-400 hover:text-slate-600 transition">
+                                        <svg class="size-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                                    </button>
+                                </h2>
+
+                                <div class="mb-4 flex items-center justify-between text-sm">
+                                    <div class="flex gap-4">
+                                        <div class="bg-slate-100 dark:bg-slate-800 px-3 py-1.5 rounded-lg">
+                                            <span class="text-slate-500">Status:</span> 
+                                            <span class="font-medium text-slate-800 dark:text-slate-200" x-text="viewBatch?.status === 'active' ? 'Active' : 'Completed'"></span>
+                                        </div>
+                                        <div class="bg-slate-100 dark:bg-slate-800 px-3 py-1.5 rounded-lg">
+                                            <span class="text-slate-500">Enrolled:</span> 
+                                            <span class="font-medium text-slate-800 dark:text-slate-200"><span x-text="viewBatch?.students?.length || 0"></span> / <span x-text="viewBatch?.capacity"></span></span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="border border-slate-200 dark:border-slate-800 rounded-lg overflow-hidden">
+                                    <table class="w-full text-left text-sm whitespace-nowrap">
+                                        <thead class="bg-slate-50 dark:bg-slate-800/50">
+                                            <tr>
+                                                <th class="px-4 py-3 font-medium">Student Name</th>
+                                                <th class="px-4 py-3 font-medium">Phone</th>
+                                                <th class="px-4 py-3 font-medium">Course</th>
+                                                <th class="px-4 py-3 font-medium">Seat</th>
+                                                <th class="px-4 py-3 font-medium">Admission Date</th>
+                                                <th class="px-4 py-3 font-medium">Status</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody class="divide-y divide-slate-200 dark:divide-slate-800">
+                                            <template x-if="viewBatch?.students && viewBatch.students.length > 0">
+                                                <template x-for="s in viewBatch.students" :key="s.id">
+                                                    <tr class="hover:bg-slate-50 dark:hover:bg-slate-800/50">
+                                                        <td class="px-4 py-3">
+                                                            <div class="font-medium text-slate-800 dark:text-slate-200" x-text="s.name"></div>
+                                                            <div class="text-xs text-slate-500" x-text="s.student_id"></div>
+                                                        </td>
+                                                        <td class="px-4 py-3 text-slate-600 dark:text-slate-400" x-text="s.phone || '-'"></td>
+                                                        <td class="px-4 py-3 text-slate-600 dark:text-slate-400" x-text="s.course"></td>
+                                                        <td class="px-4 py-3 font-semibold text-teal-600 dark:text-teal-400" x-text="s.seat_number || 'N/A'"></td>
+                                                        <td class="px-4 py-3 text-slate-600 dark:text-slate-400" x-text="s.admission_date ? new Date(s.admission_date).toLocaleDateString('en-GB') : '-'"></td>
+                                                        <td class="px-4 py-3">
+                                                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-slate-100 text-slate-800" x-text="s.status.charAt(0).toUpperCase() + s.status.slice(1)"></span>
+                                                        </td>
+                                                    </tr>
+                                                </template>
+                                            </template>
+                                            <template x-if="!viewBatch?.students || viewBatch.students.length === 0">
+                                                <tr>
+                                                    <td colspan="5" class="px-4 py-8 text-center text-slate-500">No students are enrolled in this batch yet.</td>
+                                                </tr>
+                                            </template>
+                                        </tbody>
+                                    </table>
+                                </div>
+                                
+                                <div class="mt-6 flex justify-end">
+                                    <button type="button" @click="viewBatch = null" class="btn btn-secondary">Close</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </template>
+
+<div class="flex flex-col gap-4 sm:flex-row sm:items-center justify-between p-4 border-b border-slate-200 dark:border-slate-800">
+                    <h3 class="font-semibold text-slate-800 dark:text-slate-200">Batch List</h3>
+                    <button type="button" @click="batch = { id: null, name: '', type: 'S', capacity: 15, status: 'active' }" class="btn btn-primary shrink-0">Add New Batch</button>
+                </div>
+
+                <table class="w-full text-left text-sm">
+                    <thead class="table-head">
+                        <tr>
+                            <th class="px-4 py-3">Batch Name</th>
+                            <th class="px-4 py-3">Type</th>
+                            <th class="px-4 py-3">Students</th>
+                            <th class="px-4 py-3">Status</th>
+                            <th class="px-4 py-3 text-right">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-200 dark:divide-slate-800">
+                        <?php $__empty_1 = true; $__currentLoopData = $batches; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $b): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); $__empty_1 = false; ?>
+                            <tr class="table-row cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800/50" @click="viewBatch = <?php echo e(Js::from($b)); ?>">
+                                <td class="px-4 py-3 font-medium text-teal-700 dark:text-teal-400"><?php echo e($b->name); ?></td>
+                                <td class="px-4 py-3"><?php echo e($b->type); ?> Batch</td>
+                                <td class="px-4 py-3">
+                                    <div class="flex items-center gap-2">
+                                        <div class="w-24 bg-slate-200 dark:bg-slate-700 rounded-full h-2.5">
+                                            <div class="bg-teal-600 h-2.5 rounded-full" style="width: <?php echo e(min(100, ($b->students_count / max(1, $b->capacity)) * 100)); ?>%"></div>
+                                        </div>
+                                        <span class="text-xs text-slate-500 font-medium"><?php echo e($b->students_count); ?> / <?php echo e($b->capacity); ?></span>
+                                    </div>
+                                </td>
+                                <td class="px-4 py-3">
+                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full <?php echo e($b->status === 'active' ? 'bg-green-100 text-green-800' : 'bg-slate-100 text-slate-800'); ?>">
+                                        <?php echo e(ucfirst($b->status)); ?>
+
+                                    </span>
+                                </td>
+                                <td class="px-4 py-3 text-right">
+                                    <div class="flex items-center justify-end gap-2">
+                                        <button type="button" @click.stop="viewBatch = <?php echo e(Js::from($b)); ?>" class="text-indigo-600 hover:text-indigo-800 transition" title="View Students"><svg class="size-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg></button>
+                                        <button type="button" @click.stop="batch = <?php echo e(Js::from($b)); ?>" class="text-teal-600 hover:text-teal-800 transition">
+                                            <svg class="size-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+                                        </button>
+                                        <form method="POST" action="<?php echo e(route('computer-training.batches.destroy', $b)); ?>" onsubmit="return confirm('Delete this batch?')">
+                                            <?php echo csrf_field(); ?>
+                                            <?php echo method_field('DELETE'); ?>
+                                            <button type="submit" @click.stop class="text-rose-600 hover:text-rose-800 transition">
+                                                <svg class="size-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                                            </button>
+                                        </form>
+                                    </div>
+                                </td>
+                            </tr>
+                        <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); if ($__empty_1): ?>
+                            <tr><td colspan="5" class="px-4 py-8 text-center text-slate-500">No batches created yet.</td></tr>
+                        <?php endif; ?>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Course Management -->
+            <div x-show="activeSubTab === 'courses'" x-data="{ course: null, viewCourse: null }" class="surface overflow-hidden flex flex-col h-full">
+                
+                <!-- Course Modal -->
+                <template x-teleport="body">
+                    <div x-show="course !== null" 
+                         class="fixed inset-0 z-[100] overflow-y-auto bg-slate-950/60 backdrop-blur-sm" 
+                         style="display:none"
+                         x-transition.opacity>
+                        <div class="flex min-h-full items-start justify-center p-4 sm:p-6 md:py-12" @click.self="course = null">
+                            <div class="w-full max-w-md bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 relative">
+                                <form method="POST" :action="course && course.id ? '<?php echo e(url('/services/computer-training/courses')); ?>/' + course.id : '<?php echo e(route('computer-training.courses.store')); ?>'" class="p-6">
+                                    <?php echo csrf_field(); ?>
+                                    <input type="hidden" name="_method" :value="course && course.id ? 'PUT' : 'POST'">
+                                    
+                                    <h2 class="mb-4 font-semibold text-lg flex justify-between items-center pb-4 border-b border-slate-200 dark:border-slate-800">
+                                        <span x-text="course && course.id ? 'Edit Course' : 'Add New Course'"></span>
+                                        <button type="button" @click="course = null" class="text-slate-400 hover:text-slate-600 transition">
+                                            <svg class="size-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                                        </button>
+                                    </h2>
+
+                                    <div class="space-y-4">
+                                        <div class="space-y-2">
+                                            <label class="text-sm font-medium text-slate-700 dark:text-slate-300">Course Name</label>
+                                            <input class="field" name="name" x-model="course.name" placeholder="e.g. Graphic Design" required>
+                                        </div>
+                                        <div class="space-y-2">
+                                            <label class="text-sm font-medium text-slate-700 dark:text-slate-300">Duration (Optional)</label>
+                                            <select class="field" name="duration" x-model="course.duration">
+                                                <option value="">Select Duration</option>
+                                                <option value="1 Month">1 Month</option>
+                                                <option value="2 Months">2 Months</option>
+                                                <option value="3 Months">3 Months</option>
+                                                <option value="4 Months">4 Months</option>
+                                                <option value="5 Months">5 Months</option>
+                                                <option value="6 Months">6 Months</option>
+                                            </select>
+                                        </div>
+                                        <div class="space-y-2">
+                                            <label class="text-sm font-medium text-slate-700 dark:text-slate-300">Fee (Optional)</label>
+                                            <input type="number" step="0.01" class="field" name="fee" x-model="course.fee" placeholder="0.00">
+                                        </div>
+                                        <div class="space-y-2">
+                                            <label class="text-sm font-medium text-slate-700 dark:text-slate-300">Status</label>
+                                            <select class="field" name="status" x-model="course.status" required>
+                                                <option value="active">Active</option>
+                                                <option value="inactive">Inactive</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    
+                                    <button class="btn btn-primary w-full py-3 mt-6 text-base font-semibold" x-text="course && course.id ? 'Update Course' : 'Save Course'"></button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </template>
+
+                <!-- View Course Details Modal -->
+                <template x-teleport="body">
+                    <div x-show="viewCourse !== null" 
+                         class="fixed inset-0 z-[100] overflow-y-auto bg-slate-950/60 backdrop-blur-sm" 
+                         style="display:none"
+                         x-transition.opacity>
+                        <div class="flex min-h-full items-start justify-center p-4 sm:p-6 md:py-12" @click.self="viewCourse = null">
+                            <div class="w-full max-w-2xl bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 relative">
+                                <div class="p-6 border-b border-slate-200 dark:border-slate-800 flex justify-between items-center bg-slate-50 dark:bg-slate-800/50 rounded-t-2xl">
+                                    <div class="flex flex-col">
+                                        <h2 class="font-bold text-xl text-slate-800 dark:text-slate-200" x-text="viewCourse?.name"></h2>
+                                        <span class="text-sm text-slate-500 font-medium mt-1">
+                                            <span x-text="viewCourse?.students?.length || 0"></span> Enrolled Students
+                                        </span>
+                                    </div>
+                                    <button type="button" @click="viewCourse = null" class="text-slate-400 hover:text-slate-600 transition bg-white dark:bg-slate-800 rounded-full p-2 shadow-sm border border-slate-200 dark:border-slate-700">
+                                        <svg class="size-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                                    </button>
+                                </div>
+                                <div class="p-6">
+                                    <div class="overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-800">
+                                        <table class="w-full text-left text-sm whitespace-nowrap">
+                                            <thead class="bg-slate-50 dark:bg-slate-800/50 border-b border-slate-200 dark:border-slate-800">
+                                                <tr>
+                                                    <th class="px-4 py-3 font-semibold text-slate-600 dark:text-slate-400">ID</th>
+                                                    <th class="px-4 py-3 font-semibold text-slate-600 dark:text-slate-400">Student Name</th>
+                                                    <th class="px-4 py-3 font-semibold text-slate-600 dark:text-slate-400">Phone</th>
+                                                    <th class="px-4 py-3 font-semibold text-slate-600 dark:text-slate-400">Status</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody class="divide-y divide-slate-200 dark:divide-slate-800">
+                                                <template x-if="!viewCourse?.students || viewCourse.students.length === 0">
+                                                    <tr><td colspan="4" class="px-4 py-8 text-center text-slate-500">No students enrolled in this course yet.</td></tr>
+                                                </template>
+                                                <template x-for="s in viewCourse?.students" :key="s.id">
+                                                    <tr class="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition">
+                                                        <td class="px-4 py-3 font-medium text-slate-700 dark:text-slate-300" x-text="s.id"></td>
+                                                        <td class="px-4 py-3">
+                                                            <div class="flex items-center gap-2">
+                                                                <div class=" rounded-full bg-indigo-100 dark:bg-indigo-900/50 text-indigo-600 dark:text-indigo-400 flex items-center justify-center font-bold text-xs" style="width: 2rem; height: 2rem;" x-text="s.name.charAt(0)"></div>
+                                                                <span class="font-semibold text-slate-800 dark:text-slate-200" x-text="s.name"></span>
+                                                            </div>
+                                                        </td>
+                                                        <td class="px-4 py-3 text-slate-600 dark:text-slate-400" x-text="s.phone"></td>
+                                                        <td class="px-4 py-3">
+                                                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full" 
+                                                                  :class="{
+                                                                      'bg-yellow-100 text-yellow-800': s.status === 'lead',
+                                                                      'bg-blue-100 text-blue-800': s.status === 'admitted',
+                                                                      'bg-green-100 text-green-800': s.status === 'active',
+                                                                      'bg-purple-100 text-purple-800': s.status === 'completed',
+                                                                      'bg-slate-100 text-slate-800': s.status === 'dropped',
+                                                                  }"
+                                                                  x-text="s.status.charAt(0).toUpperCase() + s.status.slice(1)">
+                                                            </span>
+                                                        </td>
+                                                    </tr>
+                                                </template>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </template>
+
+                <div class="flex flex-col gap-4 sm:flex-row sm:items-center justify-between p-4 border-b border-slate-200 dark:border-slate-800">
+                    <h3 class="font-semibold text-slate-800 dark:text-slate-200">Course List</h3>
+                    <button type="button" @click="course = { id: null, name: '', duration: '', fee: '', status: 'active' }" class="btn btn-primary shrink-0">Add New Course</button>
+                </div>
+
+                <table class="w-full text-left text-sm">
+                    <thead class="table-head">
+                        <tr>
+                            <th class="px-4 py-3">Course Name</th>
+                            <th class="px-4 py-3">Enrolled</th>
+                            <th class="px-4 py-3">Duration</th>
+                            <th class="px-4 py-3">Fee</th>
+                            <th class="px-4 py-3">Status</th>
+                            <th class="px-4 py-3 text-right">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-200 dark:divide-slate-800">
+                        <?php $__empty_1 = true; $__currentLoopData = $courseModels; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $c): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); $__empty_1 = false; ?>
+                            <tr class="table-row cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800/50 transition" @click="viewCourse = <?php echo e(Js::from($c)); ?>">
+                                <td class="px-4 py-3 font-medium text-teal-700 dark:text-teal-400"><?php echo e($c->name); ?></td>
+                                <td class="px-4 py-3">
+                                    <span class="inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-indigo-100 bg-indigo-600 rounded-full"><?php echo e($c->students_count); ?></span>
+                                </td>
+                                <td class="px-4 py-3"><?php echo e($c->duration ?? '-'); ?></td>
+                                <td class="px-4 py-3"><?php echo e($c->fee ? number_format($c->fee, 2) : '-'); ?></td>
+                                <td class="px-4 py-3">
+                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full <?php echo e($c->status === 'active' ? 'bg-green-100 text-green-800' : 'bg-slate-100 text-slate-800'); ?>">
+                                        <?php echo e(ucfirst($c->status)); ?>
+
+                                    </span>
+                                </td>
+                                <td class="px-4 py-3 text-right">
+                                    <div class="flex items-center justify-end gap-2">
+                                        <button type="button" @click.stop="viewCourse = <?php echo e(Js::from($c)); ?>" class="text-indigo-600 hover:text-indigo-800 transition" title="View Students"><svg class="size-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg></button>
+                                        <button type="button" @click.stop="course = <?php echo e(Js::from($c)); ?>" class="text-teal-600 hover:text-teal-800 transition">
+                                            <svg class="size-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+                                        </button>
+                                        <form method="POST" action="<?php echo e(route('computer-training.courses.destroy', $c)); ?>" onsubmit="return confirm('Delete this course?')">
+                                            <?php echo csrf_field(); ?>
+                                            <?php echo method_field('DELETE'); ?>
+                                            <button type="submit" class="text-rose-600 hover:text-rose-800 transition">
+                                                <svg class="size-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                                            </button>
+                                        </form>
+                                    </div>
+                                </td>
+                            </tr>
+                        <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); if ($__empty_1): ?>
+                            <tr><td class="px-4 py-5 text-center text-slate-500" colspan="5">No courses found.</td></tr>
+                        <?php endif; ?>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+                <section x-show="tab === 'attendance'" class="grid gap-5" x-data="{ 
+            showBulkModal: false, 
+            selectedCourse: '', 
+            selectedBatchId: '', 
+            attendanceDate: '<?php echo e(now()->toDateString()); ?>',
+            students: [], 
+            loading: false,
+            
+            fetchStudents() {
+                if(!this.selectedBatchId) {
+                    this.students = [];
+                    return;
+                }
+                this.loading = true;
+                fetch('<?php echo e(url('/services/computer-training/batches')); ?>/' + this.selectedBatchId + '/students')
+                    .then(res => res.json())
+                    .then(data => {
+                        this.students = data.students.map(s => ({
+                            student_id: s.id,
+                            seat_number: s.seat_number,
+                            name: s.name,
+                            status: '', // default empty, checker must select
+                            daily_rank: '' // default empty
+                        }));
+                        this.loading = false;
+                    });
+            }
+        }">
+            
+            <div class="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-4">
+                <h2 class="text-lg font-bold text-slate-800 dark:text-slate-200">Daily Attendance History</h2>
+                <button type="button" @click="showBulkModal = true; selectedCourse = ''; selectedBatchId = ''; students = [];" class="btn btn-primary px-5 py-2.5">
+                    <svg class="size-5 mr-2 inline-block" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                    Check Attendance
+                </button>
+            </div>
+
+            <!-- Bulk Attendance Modal -->
+            <template x-teleport="body">
+                <div x-show="showBulkModal" 
+                     class="fixed inset-0 z-[100] overflow-y-auto bg-slate-950/60 backdrop-blur-sm flex items-start justify-center p-4 sm:p-6 md:py-12" 
+                     style="display:none"
+                     x-transition.opacity>
+                    
+                    <div class="w-full max-w-4xl bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 relative flex flex-col max-h-[90vh]" @click.self="showBulkModal = false">
+                        
+                        <div class="p-6 border-b border-slate-200 dark:border-slate-800 flex justify-between items-center bg-slate-50 dark:bg-slate-800/50 rounded-t-2xl shrink-0">
+                            <h2 class="font-bold text-xl text-slate-800 dark:text-slate-200">Record Batch Attendance</h2>
+                            <button type="button" @click="showBulkModal = false" class="text-slate-400 hover:text-slate-600 transition bg-white dark:bg-slate-800 rounded-full p-2 shadow-sm border border-slate-200 dark:border-slate-700">
+                                <svg class="size-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                            </button>
+                        </div>
+
+                        <form method="POST" action="<?php echo e(route('computer-training.attendance.bulk')); ?>" class="flex flex-col overflow-hidden h-full">
+                            <?php echo csrf_field(); ?>
+                            
+                            <div class="p-6 border-b border-slate-200 dark:border-slate-800 shrink-0 bg-white dark:bg-slate-900">
+                                <div class="flex flex-col sm:flex-row gap-4">
+                                    <div class="space-y-1 flex-1">
+                                        <label class="text-sm font-medium text-slate-700 dark:text-slate-300">Date</label>
+                                        <input type="date" class="field" name="attendance_date" x-model="attendanceDate" required>
+                                    </div>
+                                    <div class="space-y-1 flex-1">
+                                        <label class="text-sm font-medium text-slate-700 dark:text-slate-300">Course</label>
+                                        <select class="field" x-model="selectedCourse">
+                                            <option value="">Select Course</option>
+                                            <?php $__currentLoopData = $courses; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $course): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                                                <option value="<?php echo e($course); ?>"><?php echo e($course); ?></option>
+                                            <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+                                        </select>
+                                    </div>
+                                    <div class="space-y-1 flex-1">
+                                        <label class="text-sm font-medium text-slate-700 dark:text-slate-300">Batch</label>
+                                        <select class="field" name="batch_id" x-model="selectedBatchId" @change="fetchStudents()" required>
+                                            <option value="">Select Batch</option>
+                                            <?php $__currentLoopData = $batches; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $batch): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                                                <option value="<?php echo e($batch->id); ?>"><?php echo e($batch->name); ?></option>
+                                            <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="overflow-y-auto p-6 flex-1 bg-slate-50/50 dark:bg-slate-900/50 relative">
+                                <div x-show="loading" class="absolute inset-0 flex justify-center items-center bg-white/80 dark:bg-slate-900/80 z-10 backdrop-blur-sm">
+                                    <div class="animate-spin rounded-full h-10 w-10 border-b-2 border-indigo-600"></div>
+                                </div>
+
+                                <div x-show="selectedBatchId && students.length === 0 && !loading" class="text-center py-12 text-slate-500 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm">
+                                    <svg class=" mx-auto text-slate-400 mb-3" style="width: 3rem; height: 3rem;" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" /></svg>
+                                    No students found in this batch.
+                                </div>
+                                
+                                <div x-show="!selectedBatchId" class="text-center py-12 text-slate-500 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm">
+                                    Please select a Batch to load the student list.
+                                </div>
+
+                                <div x-show="students.length > 0" class="overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm">
+                                    <table class="w-full text-left text-sm whitespace-nowrap">
+                                        <thead class="bg-slate-100 dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700">
+                                            <tr>
+                                                <th class="px-4 py-3 font-semibold text-slate-700 dark:text-slate-300 w-20 text-center">Seat</th>
+                                                <th class="px-4 py-3 font-semibold text-slate-700 dark:text-slate-300">Student Name</th>
+                                                <th class="px-4 py-3 font-semibold text-green-700 dark:text-green-400 text-center w-24">Present</th>
+                                                <th class="px-4 py-3 font-semibold text-red-700 dark:text-red-400 text-center w-24">Absent</th>
+                                                <th class="px-4 py-3 font-semibold text-amber-700 dark:text-amber-500 w-40 text-center">Best Student</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody class="divide-y divide-slate-100 dark:divide-slate-800/50">
+                                            <template x-for="(s, index) in students" :key="s.student_id">
+                                                <tr class="hover:bg-slate-100 dark:hover:bg-slate-800 transition duration-150">
+                                                    <input type="hidden" :name="`attendances[${index}][student_id]`" :value="s.student_id">
+                                                    
+                                                    <td class="px-4 py-3 text-center">
+                                                        <span class="inline-flex items-center justify-center w-7 h-7 rounded-full bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold text-xs" x-text="s.seat_number || '-'"></span>
+                                                    </td>
+                                                    <td class="px-4 py-3">
+                                                        <div class="flex items-center gap-3">
+                                                            <div class=" rounded-full bg-indigo-100 dark:bg-indigo-900/50 text-indigo-600 dark:text-indigo-400 flex items-center justify-center font-bold text-xs shrink-0" style="width: 2rem; height: 2rem;" x-text="s.name.charAt(0)"></div>
+                                                            <span class="font-medium text-slate-800 dark:text-slate-200" x-text="s.name"></span>
+                                                        </div>
+                                                    </td>
+                                                    <td class="px-4 py-3 text-center">
+                                                        <label class="cursor-pointer group relative inline-flex items-center justify-center">
+                                                            <input type="radio" :name="`attendances[${index}][status]`" value="present" x-model="s.status" class="peer sr-only" required>
+                                                            <div class="px-5 py-1.5 rounded-full border border-slate-200 dark:border-slate-700 bg-slate-100/50 dark:bg-slate-800 text-slate-400 dark:text-slate-500 font-semibold text-xs tracking-wide uppercase peer-checked:bg-green-500 peer-checked:border-green-500 peer-checked:text-white peer-checked:shadow-[0_0_12px_rgba(34,197,94,0.4)] hover:bg-slate-200 dark:hover:bg-slate-700 transition-all duration-300">
+                                                                Present
+                                                            </div>
+                                                        </label>
+                                                    </td>
+                                                    <td class="px-4 py-3 text-center">
+                                                        <label class="cursor-pointer group relative inline-flex items-center justify-center">
+                                                            <input type="radio" :name="`attendances[${index}][status]`" value="absent" x-model="s.status" class="peer sr-only" required>
+                                                            <div class="px-5 py-1.5 rounded-full border border-slate-200 dark:border-slate-700 bg-slate-100/50 dark:bg-slate-800 text-slate-400 dark:text-slate-500 font-semibold text-xs tracking-wide uppercase peer-checked:bg-red-500 peer-checked:border-red-500 peer-checked:text-white peer-checked:shadow-[0_0_12px_rgba(239,68,68,0.4)] hover:bg-slate-200 dark:hover:bg-slate-700 transition-all duration-300">
+                                                                Absent
+                                                            </div>
+                                                        </label>
+                                                    </td>
+                                                    <td class="px-4 py-3">
+                                                        <select :name="`attendances[${index}][daily_rank]`" x-model="s.daily_rank" class="bg-slate-50 border border-slate-300 text-slate-900 text-sm rounded-lg focus:ring-amber-500 focus:border-amber-500 block w-full p-2 dark:bg-slate-700 dark:border-slate-600 dark:placeholder-slate-400 dark:text-white dark:focus:ring-amber-500 dark:focus:border-amber-500">
+                                                            <option value="">None</option>
+                                                            <option value="1">1st Place 🏆</option>
+                                                            <option value="2">2nd Place 🥈</option>
+                                                            <option value="3">3rd Place 🥉</option>
+                                                        </select>
+                                                    </td>
+                                                </tr>
+                                            </template>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+
+                            <div class="p-6 border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50 shrink-0 flex justify-end gap-3 rounded-b-2xl">
+                                <button type="button" @click="showBulkModal = false" class="btn bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700">Cancel</button>
+                                <button type="submit" class="btn btn-primary px-8" :disabled="students.length === 0 || loading">Save Attendance</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </template>
+
+            <form method="GET" action="<?php echo e(url()->current()); ?>" class="flex flex-col sm:flex-row gap-3 mb-6 bg-slate-50 dark:bg-slate-800/50 p-4 rounded-xl border border-slate-200 dark:border-slate-800">
+                <input type="hidden" name="tab" value="attendance">
+                
+                <div class="flex-1">
+                    <input type="date" name="attendance_date" value="<?php echo e(request('attendance_date')); ?>" class="field w-full" placeholder="Date">
+                </div>
+                
+                <div class="flex-1">
+                    <select name="attendance_course" class="field w-full">
+                        <option value="">All Courses</option>
+                        <?php $__currentLoopData = $courses; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $c): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                            <option value="<?php echo e($c); ?>" <?php echo e(request('attendance_course') == $c ? 'selected' : ''); ?>><?php echo e($c); ?></option>
+                        <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+                    </select>
+                </div>
+
+                <div class="flex-1">
+                    <select name="attendance_batch" class="field w-full">
+                        <option value="">All Batches</option>
+                        <?php $__currentLoopData = \App\Models\ComputerTrainingBatch::orderBy('name')->get(); $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $b): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                            <option value="<?php echo e($b->id); ?>" <?php echo e(request('attendance_batch') == $b->id ? 'selected' : ''); ?>><?php echo e($b->name); ?></option>
+                        <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+                    </select>
+                </div>
+                
+                <div class="flex-[2]">
+                    <div class="relative">
+                        <input type="text" name="attendance_search" value="<?php echo e(request('attendance_search')); ?>" class="field w-full pl-10" placeholder="Search name, phone, ID...">
+                        <svg class="size-5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                    </div>
+                </div>
+
+                <div class="flex items-center gap-2">
+                    <button type="submit" class="btn btn-primary px-4 py-2 w-full sm:w-auto">Filter</button>
+                    <?php if(request('attendance_date') || request('attendance_course') || request('attendance_batch') || request('attendance_search')): ?>
+                        <a href="<?php echo e(url()->current()); ?>?tab=attendance" class="btn bg-slate-200 text-slate-700 hover:bg-slate-300 dark:bg-slate-700 dark:text-slate-300 dark:hover:bg-slate-600 px-4 py-2">Clear</a>
+                    <?php endif; ?>
                 </div>
             </form>
-            <div class="grid gap-3">
+
+            <div class="flex flex-col gap-3">
                 <?php $__empty_1 = true; $__currentLoopData = $attendanceRecords; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $attendance): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); $__empty_1 = false; ?>
-                    <article class="surface p-4"><div class="flex justify-between gap-3"><div><h3 class="font-semibold"><?php echo e($attendance->student?->name); ?></h3><p class="text-sm text-slate-500"><?php echo e($attendance->classSchedule?->batch_name ?? 'General class'); ?></p></div><div class="text-right"><p class="font-medium"><?php echo e(ucfirst($attendance->status)); ?></p><p class="text-sm text-slate-500"><?php echo e($attendance->attendance_date->format('M j, Y')); ?></p></div></div></article>
+                    <article class="surface p-4 hover:shadow-md transition-shadow relative overflow-hidden flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                        <?php if($attendance->daily_rank): ?>
+                            <div class="absolute -right-6 top-4 bg-amber-500 text-white text-[10px] font-bold px-8 py-0.5 rotate-45 shadow-sm sm:hidden">
+                                <?php echo e($attendance->daily_rank); ?><?php echo e($attendance->daily_rank == 1 ? 'st' : ($attendance->daily_rank == 2 ? 'nd' : 'rd')); ?>
+
+                            </div>
+                        <?php endif; ?>
+                        
+                        <div class="flex items-center gap-4 flex-1">
+                            <div class=" rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-600 dark:text-slate-400 font-bold text-lg shrink-0" style="width: 3rem; height: 3rem;">
+                                <?php echo e(substr($attendance->student?->name ?? '?', 0, 1)); ?>
+
+                            </div>
+                            <div class="flex-1 min-w-0">
+                                <div class="flex items-center gap-2">
+                                    <h3 class="font-bold text-slate-800 dark:text-slate-200 truncate text-base"><?php echo e($attendance->student?->name); ?></h3>
+                                    <?php if($attendance->daily_rank): ?>
+                                        <span class="hidden sm:inline-flex items-center gap-1 text-xs font-bold bg-amber-100 text-amber-700 dark:bg-amber-500/10 dark:text-amber-400 px-2 py-0.5 rounded-full">
+                                            🏆 <?php echo e($attendance->daily_rank); ?><?php echo e($attendance->daily_rank == 1 ? 'st' : ($attendance->daily_rank == 2 ? 'nd' : 'rd')); ?>
+
+                                        </span>
+                                    <?php endif; ?>
+                                </div>
+                                <div class="flex items-center gap-3 mt-1 text-sm text-slate-500">
+                                    <div class="flex items-center gap-1.5">
+                                        <svg class="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                                        <?php echo e($attendance->attendance_date->format('l, M j, Y')); ?>
+
+                                    </div>
+                                    <?php if($attendance->student?->batch): ?>
+                                        <span class="px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-xs font-medium"><?php echo e($attendance->student->batch->name); ?></span>
+                                    <?php endif; ?>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="flex items-center justify-between sm:justify-end gap-6 w-full sm:w-auto pt-3 sm:pt-0 border-t sm:border-t-0 border-slate-100 dark:border-slate-800/50">
+                            
+                            <div class="flex items-center gap-4 text-xs font-medium">
+                                <div class="flex flex-col items-center">
+                                    <span class="text-slate-400 dark:text-slate-500 uppercase text-[10px] tracking-wider mb-0.5">Present</span>
+                                    <span class="text-green-600 dark:text-green-400"><?php echo e($attendance->student?->present_count ?? 0); ?></span>
+                                </div>
+                                <div class="w-px h-6 bg-slate-200 dark:bg-slate-700"></div>
+                                <div class="flex flex-col items-center">
+                                    <span class="text-slate-400 dark:text-slate-500 uppercase text-[10px] tracking-wider mb-0.5">Absent</span>
+                                    <span class="text-red-600 dark:text-red-400"><?php echo e($attendance->student?->absent_count ?? 0); ?></span>
+                                </div>
+                            </div>
+
+                            <span class="px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider <?php echo e($attendance->status === 'present' ? 'bg-green-100 text-green-700 dark:bg-green-500/10 dark:text-green-400' : ($attendance->status === 'absent' ? 'bg-red-100 text-red-700 dark:bg-red-500/10 dark:text-red-400' : 'bg-yellow-100 text-yellow-700 dark:bg-yellow-500/10 dark:text-yellow-400')); ?>">
+                                <?php echo e($attendance->status); ?>
+
+                            </span>
+                        </div>
+                    </article>
                 <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); if ($__empty_1): ?>
-                    <div class="surface p-5 text-center text-sm text-slate-500">No attendance records.</div>
+                    <div class="col-span-full surface p-12 text-center text-slate-500 border border-dashed border-slate-300 dark:border-slate-700">
+                        <div class=" bg-slate-100 dark:bg-slate-800 rounded-full flex items-center justify-center mx-auto mb-4" style="width: 4rem; height: 4rem;">
+                            <svg class=" text-slate-400" style="width: 2rem; height: 2rem;" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+                        </div>
+                        <p class="text-lg font-medium text-slate-700 dark:text-slate-300">No attendance records yet</p>
+                        <p class="mt-1">Click "Check Attendance" above to record today's attendance.</p>
+                    </div>
                 <?php endif; ?>
             </div>
-            <div class="mt-4"><?php echo e($attendanceRecords->appends(['tab' => 'attendance'])->links()); ?></div>
+            <?php if($attendanceRecords->hasPages()): ?>
+                <div class="mt-6 flex justify-end"><?php echo e($attendanceRecords->appends(['tab' => 'attendance'])->links()); ?></div>
+            <?php endif; ?>
         </section>
 
         <section x-show="tab === 'classes'" class="grid gap-5 xl:grid-cols-[24rem_1fr]">
@@ -135,7 +1089,7 @@
                 <?php echo csrf_field(); ?>
                 <h2 class="mb-4 font-semibold">Class schedule</h2>
                 <div class="space-y-3">
-                    <select class="field" name="course" required><option value="">Course</option><?php $__currentLoopData = $courses; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $course): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?><option value="<?php echo e($course); ?>"><?php echo e($course); ?></option><?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?></select>
+                    <select class="field" name="course" x-model="student.course" required><option value="">Course</option><?php $__currentLoopData = $courses; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $course): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?><option value="<?php echo e($course); ?>"><?php echo e($course); ?></option><?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?></select>
                     <input class="field" name="batch_name" placeholder="Batch name" required>
                     <input class="field" name="instructor" placeholder="Instructor">
                     <input class="field" name="room" placeholder="Room">
@@ -161,7 +1115,7 @@
                 <h2 class="mb-4 font-semibold">Class exam</h2>
                 <div class="space-y-3">
                     <input class="field" name="title" placeholder="Exam title" required>
-                    <select class="field" name="course" required><option value="">Course</option><?php $__currentLoopData = $courses; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $course): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?><option value="<?php echo e($course); ?>"><?php echo e($course); ?></option><?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?></select>
+                    <select class="field" name="course" x-model="student.course" required><option value="">Course</option><?php $__currentLoopData = $courses; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $course): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?><option value="<?php echo e($course); ?>"><?php echo e($course); ?></option><?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?></select>
                     <select class="field" name="class_schedule_id"><option value="">Related class</option><?php $__currentLoopData = $classSchedules; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $class): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?><option value="<?php echo e($class->id); ?>"><?php echo e($class->batch_name); ?> - <?php echo e($class->class_date->format('M j')); ?></option><?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?></select>
                     <input class="field" name="exam_date" type="date" required>
                     <input class="field" name="starts_at" type="time">
@@ -190,7 +1144,7 @@
                     <input class="field" name="paid_amount" type="number" step="0.01" min="0" placeholder="Paid amount">
                     <input class="field" name="due_date" type="date" required>
                     <input class="field" name="paid_at" type="date">
-                    <select class="field" name="status"><option value="due">Due</option><option value="partial">Partial</option><option value="paid">Paid</option><option value="waived">Waived</option></select>
+                    <select class="field" name="status" x-model="student.status"><option value="due">Due</option><option value="partial">Partial</option><option value="paid">Paid</option><option value="waived">Waived</option></select>
                     <input class="field" name="payment_method" placeholder="Payment method">
                     <textarea class="field" name="remarks" placeholder="Remarks"></textarea>
                     <button class="btn btn-primary w-full">Save fee</button>
@@ -227,7 +1181,7 @@
                         <h2 class="mb-4 font-semibold text-lg flex justify-between items-center">
                             <span x-text="marketingLead && marketingLead.id ? 'Edit Student' : 'Add New Student'"></span>
                             <button type="button" @click="marketingLead = null" class="text-slate-400 hover:text-slate-600 transition">
-                                <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                                <svg class="size-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
                             </button>
                         </h2>
                         <div class="space-y-3">
@@ -249,7 +1203,7 @@
                                 <option value="6 months">6 months</option>
                             </select>
                             <input class="field" name="source" x-model="marketingLead.source" placeholder="Source">
-                            <select class="field" name="status" x-model="marketingLead.status">
+                            <select class="field" name="status" x-model="student.status" x-model="marketingLead.status">
                                 <option value="new">New</option>
                                 <option value="contacting">Contacting</option>
                                 <option value="interested">Interested</option>
@@ -292,7 +1246,7 @@
                         <?php endif; ?>
                         
                         <div class="relative flex-1 w-full sm:border-r border-slate-200 dark:border-slate-800 flex items-center">
-                            <svg class="w-5 h-5 absolute left-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                            <svg class="size-5 absolute left-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
                             <input type="text" name="marketing_search" value="<?php echo e(request('marketing_search')); ?>" placeholder="Search by name or mobile..." class="w-full bg-transparent border-0 focus:ring-0 pl-12 py-3.5 text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-400 outline-none">
                             <?php if(request('marketing_search')): ?>
                                 <a href="<?php echo e(url()->current()); ?>?tab=marketing&marketing_status=<?php echo e(request('marketing_status')); ?>&marketing_source=<?php echo e(request('marketing_source')); ?>&per_page=<?php echo e(request('per_page')); ?>" class="absolute right-3 p-1 rounded-full text-slate-400 hover:text-slate-600 hover:bg-slate-100 dark:hover:bg-slate-800 dark:hover:text-slate-300 transition">
@@ -304,11 +1258,11 @@
                         <div class="flex items-center w-full sm:w-auto pl-3 pr-2 py-2 sm:py-0 border-t sm:border-t-0 border-slate-200 dark:border-slate-800">
                             <select name="marketing_status" class="bg-transparent border-0 text-sm font-medium text-slate-600 dark:text-slate-300 focus:ring-0 outline-none cursor-pointer hover:text-slate-900 dark:hover:text-white transition w-full sm:w-auto [&>option]:dark:bg-slate-900" onchange="this.form.submit()">
                                 <option value="">All Statuses</option>
-                                <option value="new" <?php if(request('marketing_status') === 'new'): echo 'selected'; endif; ?>>New</option>
-                                <option value="contacting" <?php if(request('marketing_status') === 'contacting'): echo 'selected'; endif; ?>>Contacting</option>
-                                <option value="interested" <?php if(request('marketing_status') === 'interested'): echo 'selected'; endif; ?>>Interested</option>
-                                <option value="admitted" <?php if(request('marketing_status') === 'admitted'): echo 'selected'; endif; ?>>Admitted</option>
-                                <option value="not interested" <?php if(request('marketing_status') === 'not interested'): echo 'selected'; endif; ?>>Not Interested</option>
+                                <option value="new" === 'new')>New</option>
+                                <option value="contacting" === 'contacting')>Contacting</option>
+                                <option value="interested" === 'interested')>Interested</option>
+                                <option value="admitted" === 'admitted')>Admitted</option>
+                                <option value="not interested" === 'not interested')>Not Interested</option>
                             </select>
                             
                             <div class="h-6 w-px bg-slate-200 dark:bg-slate-700 hidden sm:block mx-1"></div>
@@ -316,7 +1270,7 @@
                             <select name="marketing_source" class="bg-transparent border-0 text-sm font-medium text-slate-600 dark:text-slate-300 focus:ring-0 outline-none cursor-pointer hover:text-slate-900 dark:hover:text-white transition w-full sm:w-auto mt-2 sm:mt-0 [&>option]:dark:bg-slate-900" onchange="this.form.submit()">
                                 <option value="">All Schools</option>
                                 <?php $__currentLoopData = $marketingSources ?? []; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $source): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
-                                    <option value="<?php echo e($source); ?>" <?php if(request('marketing_source') === $source): echo 'selected'; endif; ?>><?php echo e($source); ?></option>
+                                    <option value="<?php echo e($source); ?>" === $source)><?php echo e($source); ?></option>
                                 <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
                             </select>
                             
@@ -352,10 +1306,10 @@
                                 <input type="hidden" name="marketing_status" value="<?php echo e(request('marketing_status')); ?>">
                             <?php endif; ?>
                             <select name="per_page" onchange="this.form.submit()" class="field text-sm py-1.5 pl-3 pr-8 w-auto border border-slate-300 dark:border-slate-700">
-                                <option value="10" <?php if(request('per_page') == 10): echo 'selected'; endif; ?>>10</option>
-                                <option value="25" <?php if(request('per_page') == 25): echo 'selected'; endif; ?>>25</option>
-                                <option value="50" <?php if(request('per_page') == 50): echo 'selected'; endif; ?>>50</option>
-                                <option value="100" <?php if(request('per_page') == 100): echo 'selected'; endif; ?>>100</option>
+                                <option value="10" == 10)>10</option>
+                                <option value="25" == 25)>25</option>
+                                <option value="50" == 50)>50</option>
+                                <option value="100" == 100)>100</option>
                             </select>
                         </form>
                         <a href="<?php echo e(route('computer-training.marketing.export')); ?>" class="btn rounded-md border border-slate-300 px-4 py-1.5 text-sm font-medium hover:bg-slate-50 dark:border-slate-700 dark:hover:bg-slate-800">Export</a>

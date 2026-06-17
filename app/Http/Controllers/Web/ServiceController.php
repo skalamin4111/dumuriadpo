@@ -27,9 +27,33 @@ class ServiceController extends Controller
             $perPage = request()->integer('per_page', 10);
 
             return view('services.computer-training', [
-                'attendanceRecords' => ComputerTrainingAttendance::with(['student', 'classSchedule'])->latest('attendance_date')->paginate($perPage, ['*'], 'attendance_page'),
+                'attendanceRecords' => ComputerTrainingAttendance::with([
+                    'student' => function ($query) {
+                        $query->withCount([
+                            'attendances as present_count' => fn ($q) => $q->where('status', 'present'),
+                            'attendances as absent_count' => fn ($q) => $q->where('status', 'absent')
+                        ]);
+                    }, 
+                    'classSchedule'
+                ])
+                ->when(request('attendance_date'), fn($q, $v) => $q->whereDate('attendance_date', $v))
+                ->when(request('attendance_course') || request('attendance_batch') || request('attendance_search'), function($q) {
+                    $q->whereHas('student', function($q2) {
+                        $q2->when(request('attendance_course'), fn($q3, $v) => $q3->where('course', $v))
+                           ->when(request('attendance_batch'), fn($q3, $v) => $q3->where('batch_id', $v))
+                           ->when(request('attendance_search'), function($q3, $v) {
+                               $q3->where(function($q4) use ($v) {
+                                   $q4->where('name', 'like', "%{$v}%")
+                                      ->orWhere('phone', 'like', "%{$v}%")
+                                      ->orWhere('student_id', 'like', "%{$v}%");
+                               });
+                           });
+                    });
+                })
+                ->latest('attendance_date')->paginate($perPage, ['*'], 'attendance_page')->withQueryString(),
                 'classSchedules' => ComputerTrainingClassSchedule::orderBy('class_date')->orderBy('starts_at')->paginate($perPage, ['*'], 'class_page'),
-                'courses' => ComputerTrainingController::COURSES,
+                'courses' => \App\Models\ComputerTrainingCourse::where('status', 'active')->orderBy('name')->pluck('name'),
+                'courseModels' => \App\Models\ComputerTrainingCourse::with('students')->withCount('students')->orderBy('name')->get(),
                 'exams' => ComputerTrainingExam::orderBy('exam_date')->paginate($perPage, ['*'], 'exam_page'),
                 'fees' => ComputerTrainingFee::with('student')->latest('due_date')->paginate($perPage, ['*'], 'fee_page'),
                 'leads' => ComputerTrainingMarketingLead::when(request('marketing_status'), fn ($q, $v) => $q->where('status', $v))
@@ -45,7 +69,8 @@ class ServiceController extends Controller
                     'upcoming_classes' => ComputerTrainingClassSchedule::whereDate('class_date', '>=', today())->count(),
                     'open_leads' => ComputerTrainingMarketingLead::whereIn('status', ['new', 'contacted', 'interested'])->count(),
                 ],
-                'students' => ComputerTrainingStudent::latest()->paginate($perPage, ['*'], 'student_page'),
+                'students' => ComputerTrainingStudent::with('batch')->latest()->paginate($perPage, ['*'], 'student_page'),
+                'batches' => \App\Models\ComputerTrainingBatch::with(['students'])->withCount('students')->orderBy('type')->orderByRaw('LENGTH(name)')->orderBy('name')->get(),
             ]);
         }
         if ($service === 'bank-asia') {
