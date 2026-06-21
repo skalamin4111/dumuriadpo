@@ -13,6 +13,7 @@ class ComputerTrainingFee extends Model
     protected $fillable = [
         'company_id',
         'student_id',
+        'fee_type',
         'amount',
         'paid_amount',
         'due_date',

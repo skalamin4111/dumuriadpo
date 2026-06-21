@@ -229,8 +229,23 @@
                                         <input class="field" name="admission_date" type="date" x-model="student.admission_date">
                                     </div>
                                     <div class="space-y-2">
+                                        <label class="text-sm font-medium text-slate-700 dark:text-slate-300">সেশন / Session</label>
+                                        <select class="field" name="session" x-model="student.session">
+                                            <option value="">Select Session</option>
+                                            <template x-if="student.admission_date">
+                                                <option :value="`${new Date(student.admission_date).getFullYear()}-1`" x-text="`${new Date(student.admission_date).getFullYear()}-1`"></option>
+                                            </template>
+                                            <template x-if="student.admission_date">
+                                                <option :value="`${new Date(student.admission_date).getFullYear()}-2`" x-text="`${new Date(student.admission_date).getFullYear()}-2`"></option>
+                                            </template>
+                                            <template x-if="student.session && (!student.admission_date || ![`${new Date(student.admission_date).getFullYear()}-1`, `${new Date(student.admission_date).getFullYear()}-2`].includes(student.session))">
+                                                <option :value="student.session" x-text="student.session"></option>
+                                            </template>
+                                        </select>
+                                    </div>
+                                    <div class="space-y-2">
                                         <label class="text-sm font-medium text-slate-700 dark:text-slate-300">ক্রমিক নং / Serial No (Student ID)</label>
-                                        <input class="field" name="student_id" x-model="student.student_id" placeholder="Optional custom ID">
+                                        <input class="field" name="student_id" x-model="student.student_id" placeholder="Optional custom ID" x-effect="if (!student.id && student.session) { student.student_id = student.session + (student.seat_number ? '-' + String(student.seat_number).padStart(2, '0') : '') }">
                                     </div>
                                 </div>
 
@@ -321,6 +336,7 @@
                                         <div class="text-slate-500">Batch:</div><div class="col-span-2 font-medium" x-text="viewStudent?.batch?.name || 'Unassigned'"></div>
                                         <div class="text-slate-500">Seat Number:</div><div class="col-span-2 font-medium" x-text="viewStudent?.seat_number || 'N/A'"></div>
                                         <div class="text-slate-500">Duration:</div><div class="col-span-2 font-medium" x-text="viewStudent?.duration || 'N/A'"></div>
+                                        <div class="text-slate-500">Session:</div><div class="col-span-2 font-medium" x-text="viewStudent?.session || 'N/A'"></div>
                                         <div class="text-slate-500">Admission Date:</div><div class="col-span-2 font-medium" x-text="viewStudent?.admission_date ? new Date(viewStudent.admission_date).toLocaleDateString('en-GB') : 'N/A'"></div>
                                         <div class="text-slate-500">Status:</div>
                                         <div class="col-span-2">
@@ -377,7 +393,7 @@
 <div class="flex flex-col gap-4 sm:flex-row sm:items-center justify-between p-4 border-b border-slate-200 dark:border-slate-800">
                     <h3 class="font-semibold text-slate-800 dark:text-slate-200">Student List</h3>
                     <div class="flex flex-wrap items-center gap-3">
-                        <button type="button" @click="student = { id: null, name: '', name_bn: '', father_name: '', mother_name: '', date_of_birth: '', nid_or_birth_reg: '', nationality: 'Bangladeshi', gender: '', marital_status: '', religion: '', educational_qualifications: [{}, {}], course: '', duration: '', admission_date: '<?php echo e(now()->toDateString()); ?>', student_id: '', guardian_name: '', guardian_phone: '', status: 'admitted', notes: '', address: '', phone: '', email: '', batch_id: '', seat_number: '' }" class="btn btn-primary shrink-0">Add New Student</button>
+                        <button type="button" @click="student = { id: null, name: '', name_bn: '', father_name: '', mother_name: '', date_of_birth: '', nid_or_birth_reg: '', nationality: 'Bangladeshi', gender: '', marital_status: '', religion: '', educational_qualifications: [{}, {}], course: '', duration: '', session: '', admission_date: '<?php echo e(now()->toDateString()); ?>', student_id: '', guardian_name: '', guardian_phone: '', status: 'admitted', notes: '', address: '', phone: '', email: '', batch_id: '', seat_number: '' }" class="btn btn-primary shrink-0">Add New Student</button>
                         <form method="GET" action="<?php echo e(url()->current()); ?>" class="flex items-center gap-2">
                             <input type="hidden" name="tab" value="students">
                             <select name="per_page" onchange="this.form.submit()" class="field text-sm py-1.5 pl-3 pr-8 w-auto">
@@ -1089,19 +1105,55 @@
                 <?php echo csrf_field(); ?>
                 <h2 class="mb-4 font-semibold">Class schedule</h2>
                 <div class="space-y-3">
-                    <select class="field" name="course" x-model="student.course" required><option value="">Course</option><?php $__currentLoopData = $courses; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $course): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?><option value="<?php echo e($course); ?>"><?php echo e($course); ?></option><?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?></select>
-                    <input class="field" name="batch_name" placeholder="Batch name" required>
-                    <input class="field" name="instructor" placeholder="Instructor">
-                    <input class="field" name="room" placeholder="Room">
-                    <input class="field" name="class_date" type="date" value="<?php echo e(now()->toDateString()); ?>" required>
-                    <div class="grid grid-cols-2 gap-3"><input class="field" name="starts_at" type="time" required><input class="field" name="ends_at" type="time" required></div>
-                    <textarea class="field" name="topic" placeholder="Topic"></textarea>
-                    <button class="btn btn-primary w-full">Save class</button>
+                    <div class="grid grid-cols-2 gap-3">
+                        <input class="field" name="class_date" type="date" value="<?php echo e(now()->toDateString()); ?>" required title="Class Date">
+                        <input class="field" name="starts_at" type="time" required title="Class Time">
+                    </div>
+                    <select class="field" name="course" required>
+                        <option value="">Select Course</option>
+                        <?php $__currentLoopData = $courses; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $course): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                            <option value="<?php echo e($course); ?>"><?php echo e($course); ?></option>
+                        <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+                    </select>
+                    <select class="field" name="batch_id" required>
+                        <option value="">Select Batch</option>
+                        <?php $__currentLoopData = \App\Models\ComputerTrainingBatch::withCount('students')->orderBy('name')->get(); $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $batch): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                            <option value="<?php echo e($batch->id); ?>"><?php echo e($batch->name); ?> (<?php echo e($batch->students_count); ?> Students)</option>
+                        <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+                    </select>
+                    <div class="grid grid-cols-2 gap-3">
+                        <input class="field" name="instructor" placeholder="Trainer Name">
+                        <input class="field" name="class_number" placeholder="Class Number (e.g. 01)">
+                    </div>
+                    <textarea class="field" name="topic" placeholder="Class Topic / Description" rows="3"></textarea>
+                    <button class="btn btn-primary w-full">Save Schedule</button>
                 </div>
             </form>
             <div class="grid gap-3">
                 <?php $__empty_1 = true; $__currentLoopData = $classSchedules; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $class): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); $__empty_1 = false; ?>
-                    <article class="surface p-4"><div class="flex justify-between gap-3"><div><h3 class="font-semibold"><?php echo e($class->batch_name); ?></h3><p class="text-sm text-slate-500"><?php echo e($class->course); ?> · <?php echo e($class->topic); ?></p></div><div class="text-right"><p class="font-medium"><?php echo e($class->class_date->format('M j, Y')); ?></p><p class="text-sm text-slate-500"><?php echo e($class->starts_at); ?> - <?php echo e($class->ends_at); ?></p></div></div></article>
+                    <article class="surface p-4">
+                        <div class="flex justify-between gap-3">
+                            <div>
+                                <h3 class="font-semibold">
+                                    <?php echo e($class->batch_name); ?>
+
+                                    <?php if($class->class_number): ?>
+                                        <span class="text-teal-600 dark:text-teal-400"> (Class <?php echo e($class->class_number); ?>)</span>
+                                    <?php endif; ?>
+                                </h3>
+                                <p class="text-sm text-slate-500">
+                                    <?php echo e($class->course); ?>
+
+                                    <?php if($class->instructor): ?> · Trainer: <?php echo e($class->instructor); ?> <?php endif; ?>
+                                    <?php if($class->topic): ?> · Topic: <?php echo e($class->topic); ?> <?php endif; ?>
+                                </p>
+                            </div>
+                            <div class="text-right shrink-0">
+                                <p class="font-medium"><?php echo e($class->class_date->format('M j, Y')); ?></p>
+                                <p class="text-sm text-slate-500"><?php echo e(\Carbon\Carbon::parse($class->starts_at)->format('h:i A')); ?></p>
+                            </div>
+                        </div>
+                    </article>
                 <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); if ($__empty_1): ?>
                     <div class="surface p-5 text-center text-sm text-slate-500">No classes scheduled.</div>
                 <?php endif; ?>
@@ -1134,30 +1186,114 @@
             <div class="mt-4"><?php echo e($exams->appends(['tab' => 'exams'])->links()); ?></div>
         </section>
 
-        <section x-show="tab === 'fees'" class="grid gap-5 xl:grid-cols-[24rem_1fr]">
+        <section x-show="tab === 'fees'" class="grid gap-5 xl:grid-cols-[24rem_1fr]" x-data="{ 
+            feeCourse: '', 
+            feeBatch: '', 
+            feeStudent: '',
+            totalAmount: '',
+            paidAmount: '',
+            feeType: ''
+        }">
             <form method="POST" action="<?php echo e(route('computer-training.fees.store')); ?>" class="surface p-5">
                 <?php echo csrf_field(); ?>
                 <h2 class="mb-4 font-semibold">Fee management</h2>
                 <div class="space-y-3">
-                    <select class="field" name="student_id" required><option value="">Student</option><?php $__currentLoopData = $students; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $student): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?><option value="<?php echo e($student->id); ?>"><?php echo e($student->name); ?></option><?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?></select>
-                    <input class="field" name="amount" type="number" step="0.01" min="0" placeholder="Total amount" required>
-                    <input class="field" name="paid_amount" type="number" step="0.01" min="0" placeholder="Paid amount">
-                    <input class="field" name="due_date" type="date" required>
-                    <input class="field" name="paid_at" type="date">
-                    <select class="field" name="status" x-model="student.status"><option value="due">Due</option><option value="partial">Partial</option><option value="paid">Paid</option><option value="waived">Waived</option></select>
+                    <select class="field" x-model="feeCourse" @change="feeStudent = ''">
+                        <option value="">All Courses</option>
+                        <?php $__currentLoopData = $courses; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $course): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                            <option value="<?php echo e($course); ?>"><?php echo e($course); ?></option>
+                        <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+                    </select>
+
+                    <select class="field" x-model="feeBatch" @change="feeStudent = ''">
+                        <option value="">All Batches</option>
+                        <?php $__currentLoopData = \App\Models\ComputerTrainingBatch::orderBy('name')->get(); $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $b): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                            <option value="<?php echo e($b->id); ?>"><?php echo e($b->name); ?></option>
+                        <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+                    </select>
+
+                    <select class="field" name="student_id" x-model="feeStudent" required>
+                        <option value="">Select Student</option>
+                        <template x-for="student in <?php echo e(Js::from(\App\Models\ComputerTrainingStudent::select('id', 'name', 'course', 'batch_id')->get())); ?>.filter(s => (!feeCourse || s.course === feeCourse) && (!feeBatch || s.batch_id == feeBatch))" :key="student.id">
+                            <option :value="student.id" x-text="student.name"></option>
+                        </template>
+                    </select>
+
+                    <select class="field" name="fee_type" x-model="feeType" required>
+                        <option value="">Select Fee Type</option>
+                        <option value="Admission">Admission</option>
+                        <option value="Registration">Registration</option>
+                        <option value="Exam Fee">Exam Fee</option>
+                        <option value="Tour">Tour</option>
+                        <option value="Donation">Donation</option>
+                    </select>
+
+                    <div class="grid grid-cols-2 gap-3">
+                        <input class="field" name="amount" type="number" step="0.01" min="0" placeholder="Total amount" x-model="totalAmount" required>
+                        <input class="field" name="paid_amount" type="number" step="0.01" min="0" placeholder="Paid amount" x-model="paidAmount">
+                    </div>
+                    
+                    <div class="text-sm font-medium text-slate-700 dark:text-slate-300 py-1">
+                        Due: <span x-text="Math.max(0, (parseFloat(totalAmount) || 0) - (parseFloat(paidAmount) || 0)).toFixed(2)" class="text-red-500 font-bold"></span>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-3">
+                        <input class="field" name="due_date" type="date" required title="Due Date">
+                        <input class="field" name="paid_at" type="date" title="Paid At">
+                    </div>
+                    
+                    <select class="field" name="status">
+                        <option value="due">Due</option>
+                        <option value="partial">Partial</option>
+                        <option value="paid">Paid</option>
+                        <option value="waived">Waived</option>
+                    </select>
+                    
                     <input class="field" name="payment_method" placeholder="Payment method">
                     <textarea class="field" name="remarks" placeholder="Remarks"></textarea>
                     <button class="btn btn-primary w-full">Save fee</button>
                 </div>
             </form>
-            <div class="grid gap-3">
-                <?php $__empty_1 = true; $__currentLoopData = $fees; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $fee): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); $__empty_1 = false; ?>
-                    <article class="surface p-4"><div class="flex justify-between gap-3"><div><h3 class="font-semibold"><?php echo e($fee->student?->name); ?></h3><p class="text-sm text-slate-500"><?php echo e(ucfirst($fee->status)); ?> · Due <?php echo e($fee->due_date->format('M j')); ?></p></div><div class="text-right"><p class="font-semibold"><?php echo e(number_format($fee->paid_amount, 2)); ?></p><p class="text-sm text-slate-500">of <?php echo e(number_format($fee->amount, 2)); ?></p></div></div></article>
-                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); if ($__empty_1): ?>
-                    <div class="surface p-5 text-center text-sm text-slate-500">No fee records.</div>
-                <?php endif; ?>
+            <div class="flex flex-col gap-3">
+                <form method="GET" class="flex gap-3 items-center">
+                    <input type="hidden" name="tab" value="fees">
+                    <select class="field py-1" name="fee_status" onchange="this.form.submit()">
+                        <option value="">All Statuses</option>
+                        <option value="paid" <?php echo e(request('fee_status') === 'paid' ? 'selected' : ''); ?>>Paid</option>
+                        <option value="due" <?php echo e(request('fee_status') === 'due' ? 'selected' : ''); ?>>Due / Partial</option>
+                    </select>
+                </form>
+                
+                <div class="grid gap-3">
+                    <?php $__empty_1 = true; $__currentLoopData = $fees; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $fee): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); $__empty_1 = false; ?>
+                        <article class="surface p-4">
+                            <div class="flex justify-between gap-3">
+                                <div>
+                                    <h3 class="font-semibold <?php echo e($fee->amount > $fee->paid_amount ? 'text-red-600 dark:text-red-400' : ''); ?>">
+                                        <?php echo e($fee->student?->name); ?>
+
+                                    </h3>
+                                    <p class="text-sm text-slate-500">
+                                        <?php echo e($fee->fee_type ?? 'Fee'); ?> · <?php echo e(ucfirst($fee->status)); ?>
+
+                                        <?php if($fee->amount > $fee->paid_amount): ?>
+                                            · Due Date: <?php echo e($fee->due_date->format('M j, Y')); ?>
+
+                                        <?php endif; ?>
+                                    </p>
+                                </div>
+                                <div class="text-right shrink-0">
+                                    <p class="font-semibold text-teal-600 dark:text-teal-400"><?php echo e(number_format($fee->paid_amount, 2)); ?> Paid</p>
+                                    <p class="text-sm text-slate-500">of <?php echo e(number_format($fee->amount, 2)); ?> Total</p>
+                                </div>
+                            </div>
+                        </article>
+                    <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); if ($__empty_1): ?>
+                        <div class="surface p-5 text-center text-sm text-slate-500">No fee records.</div>
+                    <?php endif; ?>
+                </div>
+                <div class="mt-4"><?php echo e($fees->appends(['tab' => 'fees', 'fee_status' => request('fee_status')])->links()); ?></div>
             </div>
-            <div class="mt-4"><?php echo e($fees->appends(['tab' => 'fees'])->links()); ?></div>
         </section>
 
         <section x-show="tab === 'marketing'" class="grid gap-5">

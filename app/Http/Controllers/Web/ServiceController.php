@@ -55,7 +55,10 @@ class ServiceController extends Controller
                 'courses' => \App\Models\ComputerTrainingCourse::where('status', 'active')->orderBy('name')->pluck('name'),
                 'courseModels' => \App\Models\ComputerTrainingCourse::with('students')->withCount('students')->orderBy('name')->get(),
                 'exams' => ComputerTrainingExam::orderBy('exam_date')->paginate($perPage, ['*'], 'exam_page'),
-                'fees' => ComputerTrainingFee::with('student')->latest('due_date')->paginate($perPage, ['*'], 'fee_page'),
+                'fees' => ComputerTrainingFee::with('student')
+                    ->when(request('fee_status') === 'paid', fn ($q) => $q->whereColumn('paid_amount', '>=', 'amount')->orWhere('status', 'paid'))
+                    ->when(request('fee_status') === 'due', fn ($q) => $q->whereColumn('paid_amount', '<', 'amount')->where('status', '!=', 'paid'))
+                    ->latest('due_date')->paginate($perPage, ['*'], 'fee_page')->withQueryString(),
                 'leads' => ComputerTrainingMarketingLead::when(request('marketing_status'), fn ($q, $v) => $q->where('status', $v))
                     ->when(request('marketing_source'), fn ($q, $v) => $q->where('source', $v))
                     ->when(request('marketing_search'), fn ($q, $v) => $q->where(fn($q2) => $q2->where('name', 'like', "%{$v}%")->orWhere('phone', 'like', "%{$v}%")))

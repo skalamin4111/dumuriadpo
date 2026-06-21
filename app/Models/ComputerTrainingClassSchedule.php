@@ -13,7 +13,9 @@ class ComputerTrainingClassSchedule extends Model
     protected $fillable = [
         'company_id',
         'course',
+        'batch_id',
         'batch_name',
+        'class_number',
         'instructor',
         'room',
         'class_date',
@@ -21,6 +23,11 @@ class ComputerTrainingClassSchedule extends Model
         'ends_at',
         'topic',
     ];
+
+    public function batch()
+    {
+        return $this->belongsTo(ComputerTrainingBatch::class);
+    }
 
     protected function casts(): array
     {

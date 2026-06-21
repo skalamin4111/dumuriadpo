@@ -187,14 +187,27 @@ class ComputerTrainingController extends Controller
     {
         $data = $request->validate([
             'course' => ['required', 'string', 'max:255'],
-            'batch_name' => ['required', 'string', 'max:255'],
+            'batch_id' => ['nullable', 'exists:computer_training_batches,id'],
+            'batch_name' => ['nullable', 'string', 'max:255'],
+            'class_number' => ['nullable', 'string', 'max:255'],
             'instructor' => ['nullable', 'string', 'max:255'],
             'room' => ['nullable', 'string', 'max:255'],
             'class_date' => ['required', 'date'],
             'starts_at' => ['required', 'date_format:H:i'],
-            'ends_at' => ['required', 'date_format:H:i'],
+            'ends_at' => ['nullable', 'date_format:H:i'],
             'topic' => ['nullable', 'string'],
         ]);
+
+        if (!empty($data['batch_id'])) {
+            $batch = \App\Models\ComputerTrainingBatch::find($data['batch_id']);
+            if ($batch) {
+                $data['batch_name'] = $batch->name;
+            }
+        }
+
+        if (empty($data['ends_at'])) {
+            $data['ends_at'] = $data['starts_at'];
+        }
 
         ComputerTrainingClassSchedule::create($this->withCompany($request, $data));
 
@@ -222,6 +235,7 @@ class ComputerTrainingController extends Controller
     {
         $data = $request->validate([
             'student_id' => ['required', 'exists:computer_training_students,id'],
+            'fee_type' => ['required', 'string'],
             'amount' => ['required', 'numeric', 'min:0'],
             'paid_amount' => ['nullable', 'numeric', 'min:0'],
             'due_date' => ['required', 'date'],

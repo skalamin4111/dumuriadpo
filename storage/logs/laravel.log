@@ -1815,3 +1815,12 @@
 #72 /home/sahil/development/office_project/dpoerp/vendor/laravel/framework/src/Illuminate/Foundation/resources/server.php(23): require_once('/home/sahil/dev...')
 #73 {main}
 "} 
+[2026-06-21 04:35:50] local.ERROR: Command "tinker" is not defined. {"exception":"[object] (Symfony\\Component\\Console\\Exception\\CommandNotFoundException(code: 0): Command \"tinker\" is not defined. at /home/sahil/development/office_project/dpoerp/vendor/symfony/console/Application.php:759)
+[stacktrace]
+#0 /home/sahil/development/office_project/dpoerp/vendor/symfony/console/Application.php(298): Symfony\\Component\\Console\\Application->find()
+#1 /home/sahil/development/office_project/dpoerp/vendor/symfony/console/Application.php(195): Symfony\\Component\\Console\\Application->doRun()
+#2 /home/sahil/development/office_project/dpoerp/vendor/laravel/framework/src/Illuminate/Foundation/Console/Kernel.php(198): Symfony\\Component\\Console\\Application->run()
+#3 /home/sahil/development/office_project/dpoerp/vendor/laravel/framework/src/Illuminate/Foundation/Application.php(1235): Illuminate\\Foundation\\Console\\Kernel->handle()
+#4 /home/sahil/development/office_project/dpoerp/artisan(12): Illuminate\\Foundation\\Application->handleCommand()
+#5 {main}
+"} 

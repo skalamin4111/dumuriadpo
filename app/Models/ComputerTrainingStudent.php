@@ -34,6 +34,7 @@ class ComputerTrainingStudent extends Model
         'email',
         'course',
         'duration',
+        'session',
         'admission_date',
         'status',
         'address',
