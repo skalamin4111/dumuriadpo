@@ -235,7 +235,7 @@
                                     </div>
                                     <div class="space-y-2">
                                         <label class="text-sm font-medium text-slate-700 dark:text-slate-300">ক্রমিক নং / Serial No (Student ID)</label>
-                                        <input class="field" name="student_id" x-model="student.student_id" placeholder="Optional custom ID" x-effect="if (!student.id && student.session) { student.student_id = student.session + (student.seat_number ? '-' + String(student.seat_number).padStart(2, '0') : '') }">
+                                        <input class="field" name="student_id" x-model="student.student_id" placeholder="Optional custom ID" x-effect="if (student.session) { student.student_id = student.session.replace('-', '') + (student.seat_number ? String(student.seat_number).padStart(2, '0') : '') }">
                                     </div>
                                 </div>
 
@@ -1481,22 +1481,95 @@
             <div class="mt-4">{{ $reminders->appends(['tab' => 'reminders'])->links() }}</div>
         </section>
 
-        <section x-show="tab === 'notices'" class="grid gap-5 xl:grid-cols-[24rem_1fr]">
-            <form method="POST" action="{{ route('computer-training.notices.store') }}" class="surface p-5">
+        <section x-show="tab === 'notices'" class="grid gap-5 xl:grid-cols-[24rem_1fr]" x-data="{ noticeTargetType: 'all', noticeCourse: '', noticeBatch: '', noticeStudent: '' }">
+            <form method="POST" action="{{ route('computer-training.notices.store') }}" enctype="multipart/form-data" class="surface p-5">
                 @csrf
                 <h2 class="mb-4 font-semibold">Notice</h2>
                 <div class="space-y-3">
                     <input class="field" name="title" placeholder="Notice title" required>
                     <textarea class="field" name="body" placeholder="Notice body" required></textarea>
                     <input class="field" name="publish_date" type="date" value="{{ now()->toDateString() }}" required>
-                    <select class="field" name="audience"><option value="all">All</option><option value="students">Students</option><option value="leads">Leads</option><option value="staff">Staff</option></select>
-                    <label class="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-300"><input class="rounded border-slate-300 text-teal-600 focus:ring-teal-500" type="checkbox" name="is_active" value="1" checked> Active</label>
+                    
+                    <input class="field file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:font-semibold file:bg-teal-50 file:text-teal-700 hover:file:bg-teal-100 dark:file:bg-slate-800 dark:file:text-teal-400" type="file" name="image" accept="image/*">
+                    
+                    <select class="field" name="target_type" x-model="noticeTargetType" required>
+                        <option value="all">All Students</option>
+                        <option value="course">Specific Course</option>
+                        <option value="batch">Specific Batch</option>
+                        <option value="student">Specific Student</option>
+                    </select>
+
+                    <template x-if="noticeTargetType === 'course'">
+                        <select class="field" name="target_course" x-model="noticeCourse" required>
+                            <option value="">Select Course</option>
+                            @foreach ($courses as $course)
+                                <option value="{{ $course }}">{{ $course }}</option>
+                            @endforeach
+                        </select>
+                    </template>
+
+                    <template x-if="noticeTargetType === 'batch'">
+                        <select class="field" name="target_batch_id" x-model="noticeBatch" required>
+                            <option value="">Select Batch</option>
+                            @foreach (\App\Models\ComputerTrainingBatch::orderBy('name')->get() as $b)
+                                <option value="{{ $b->id }}">{{ $b->name }}</option>
+                            @endforeach
+                        </select>
+                    </template>
+
+                    <template x-if="noticeTargetType === 'student'">
+                        <select class="field" name="target_student_id" x-model="noticeStudent" required>
+                            <option value="">Select Student</option>
+                            <template x-for="student in {{ Js::from(\App\Models\ComputerTrainingStudent::select('id', 'name', 'course', 'batch_id')->get()) }}" :key="student.id">
+                                <option :value="student.id" x-text="student.name"></option>
+                            </template>
+                        </select>
+                    </template>
+
+                    <div class="flex items-center gap-5">
+                        <label class="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-300">
+                            <input class="rounded border-slate-300 text-teal-600 focus:ring-teal-500" type="checkbox" name="is_active" value="1" checked> Active
+                        </label>
+                        <label class="flex items-center gap-2 text-sm text-emerald-600 dark:text-emerald-400 font-medium">
+                            <input class="rounded border-emerald-400 text-emerald-600 focus:ring-emerald-500 bg-emerald-50 dark:bg-emerald-900/30" type="checkbox" name="send_whatsapp" value="1"> 
+                            <svg class="size-4" fill="currentColor" viewBox="0 0 24 24"><path d="M12.031 0C5.385 0 0 5.385 0 12.031c0 2.128.552 4.195 1.6 6.007L.178 23.364l5.474-1.436A11.96 11.96 0 0012.031 24c6.646 0 12.031-5.385 12.031-12.031C24.062 5.385 18.677 0 12.031 0zm0 22c-1.854 0-3.666-.496-5.263-1.442l-.377-.223-3.916 1.026 1.045-3.818-.245-.39A9.97 9.97 0 012 12.03C2 6.505 6.505 2 12.031 2 17.558 2 22.062 6.505 22.062 12.03 22.062 17.558 17.558 22 12.031 22zm5.495-7.514c-.301-.151-1.783-.881-2.061-.982-.276-.1-.478-.151-.679.151-.2.302-.779.982-.955 1.183-.176.201-.352.226-.653.075-.302-.15-1.272-.469-2.423-1.494-.895-.798-1.501-1.782-1.677-2.083-.176-.302-.019-.465.132-.615.136-.135.302-.352.452-.528.151-.176.201-.302.302-.503.1-.201.05-.377-.025-.528-.075-.151-.679-1.635-.93-2.238-.245-.589-.494-.509-.679-.518-.176-.008-.377-.01-.578-.01-.201 0-.528.075-.804.377-.276.302-1.055 1.031-1.055 2.514 0 1.483 1.08 2.916 1.231 3.117.151.201 2.122 3.238 5.139 4.538.718.31 1.278.495 1.716.634.721.228 1.378.195 1.895.118.577-.085 1.783-.729 2.034-1.433.251-.704.251-1.307.176-1.433-.075-.126-.276-.201-.578-.352z"></path></svg>
+                            Send via WhatsApp
+                        </label>
+                    </div>
                     <button class="btn btn-primary w-full">Publish notice</button>
                 </div>
             </form>
             <div class="grid gap-3">
                 @forelse ($notices as $notice)
-                    <article class="surface p-4"><div class="flex justify-between gap-3"><div><h3 class="font-semibold">{{ $notice->title }}</h3><p class="mt-1 text-sm text-slate-500">{{ $notice->body }}</p></div><div class="text-right"><p class="font-medium">{{ ucfirst($notice->audience) }}</p><p class="text-sm text-slate-500">{{ $notice->publish_date->format('M j, Y') }}</p></div></div></article>
+                    <article class="surface p-4">
+                        <div class="flex gap-4">
+                            @if($notice->image_path)
+                                <div class="shrink-0">
+                                    <img src="{{ Storage::url($notice->image_path) }}" alt="Notice Image" class="w-24 h-24 object-cover rounded shadow-sm">
+                                </div>
+                            @endif
+                            <div class="flex-1 flex justify-between gap-3">
+                                <div>
+                                    <h3 class="font-semibold text-lg">{{ $notice->title }}</h3>
+                                    <p class="mt-1 text-sm text-slate-600 dark:text-slate-400 whitespace-pre-wrap">{{ $notice->body }}</p>
+                                </div>
+                                <div class="text-right shrink-0">
+                                    <span class="inline-block px-2 py-1 text-xs font-semibold bg-teal-100 text-teal-800 dark:bg-teal-900 dark:text-teal-200 rounded-full mb-2">
+                                        @if($notice->target_course)
+                                            Course: {{ $notice->target_course }}
+                                        @elseif($notice->target_batch_id)
+                                            Batch: {{ $notice->batch?->name }}
+                                        @elseif($notice->target_student_id)
+                                            Student: {{ $notice->student?->name }}
+                                        @else
+                                            {{ ucfirst($notice->audience) }}
+                                        @endif
+                                    </span>
+                                    <p class="text-sm text-slate-500">{{ $notice->publish_date->format('M j, Y') }}</p>
+                                </div>
+                            </div>
+                        </div>
+                    </article>
                 @empty
                     <div class="surface p-5 text-center text-sm text-slate-500">No notices.</div>
                 @endforelse

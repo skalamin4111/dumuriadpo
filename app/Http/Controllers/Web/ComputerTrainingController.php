@@ -369,12 +369,53 @@ class ComputerTrainingController extends Controller
             'title' => ['required', 'string', 'max:255'],
             'body' => ['required', 'string'],
             'publish_date' => ['required', 'date'],
-            'audience' => ['required', Rule::in(['all', 'students', 'leads', 'staff'])],
             'is_active' => ['nullable', 'boolean'],
+            'send_whatsapp' => ['nullable', 'boolean'],
+            'image' => ['nullable', 'image', 'max:5120'],
+            'target_type' => ['required', \Illuminate\Validation\Rule::in(['all', 'course', 'batch', 'student'])],
+            'target_course' => ['nullable', 'string', 'required_if:target_type,course'],
+            'target_batch_id' => ['nullable', 'exists:computer_training_batches,id', 'required_if:target_type,batch'],
+            'target_student_id' => ['nullable', 'exists:computer_training_students,id', 'required_if:target_type,student'],
         ]);
 
         $data['is_active'] = $request->boolean('is_active', true);
-        ComputerTrainingNotice::create($this->withCompany($request, $data));
+        $sendWhatsapp = $request->boolean('send_whatsapp', false);
+        
+        if ($data['target_type'] === 'all') {
+            $data['audience'] = 'all';
+        } else {
+            $data['audience'] = 'students';
+        }
+
+        if ($request->hasFile('image')) {
+            $data['image_path'] = $request->file('image')->store('notices', 'public');
+        }
+
+        if ($data['target_type'] !== 'course') $data['target_course'] = null;
+        if ($data['target_type'] !== 'batch') $data['target_batch_id'] = null;
+        if ($data['target_type'] !== 'student') $data['target_student_id'] = null;
+
+        $notice = ComputerTrainingNotice::create($this->withCompany($request, $data));
+
+        if ($sendWhatsapp) {
+            $query = \App\Models\ComputerTrainingStudent::query()
+                ->where('company_id', $request->user() ? $request->user()->company_id : 1)
+                ->whereNotNull('phone');
+            
+            if ($data['target_type'] === 'course') {
+                $query->where('course', $data['target_course']);
+            } elseif ($data['target_type'] === 'batch') {
+                $query->where('batch_id', $data['target_batch_id']);
+            } elseif ($data['target_type'] === 'student') {
+                $query->where('id', $data['target_student_id']);
+            }
+            
+            $phoneNumbers = $query->pluck('phone')->toArray();
+            
+            if (!empty($phoneNumbers)) {
+                \App\Jobs\SendWhatsAppNoticeJob::dispatch($notice, $phoneNumbers);
+            }
+        }
 
         return back()->with('status', 'Notice published.');
     }

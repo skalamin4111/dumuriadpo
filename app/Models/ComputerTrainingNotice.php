@@ -16,6 +16,10 @@ class ComputerTrainingNotice extends Model
         'publish_date',
         'audience',
         'is_active',
+        'image_path',
+        'target_course',
+        'target_batch_id',
+        'target_student_id',
     ];
 
     protected function casts(): array
@@ -24,5 +28,15 @@ class ComputerTrainingNotice extends Model
             'publish_date' => 'date',
             'is_active' => 'boolean',
         ];
+    }
+
+    public function batch()
+    {
+        return $this->belongsTo(ComputerTrainingBatch::class, 'target_batch_id');
+    }
+
+    public function student()
+    {
+        return $this->belongsTo(ComputerTrainingStudent::class, 'target_student_id');
     }
 }
