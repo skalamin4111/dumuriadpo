@@ -1901,3 +1901,52 @@
 [2026-06-22 04:00:56] local.INFO: WhatsAppService: [MOCK SEND] {"to":"8801955801666","message":"*Notice:* kjdlkjsdl
 
 jdlksjdl","image":null} 
+[2026-06-22 14:35:23] local.ERROR: Command "tinker" is not defined. {"exception":"[object] (Symfony\\Component\\Console\\Exception\\CommandNotFoundException(code: 0): Command \"tinker\" is not defined. at /home/sahil/development/office_project/dpoerp/vendor/symfony/console/Application.php:759)
+[stacktrace]
+#0 /home/sahil/development/office_project/dpoerp/vendor/symfony/console/Application.php(298): Symfony\\Component\\Console\\Application->find()
+#1 /home/sahil/development/office_project/dpoerp/vendor/symfony/console/Application.php(195): Symfony\\Component\\Console\\Application->doRun()
+#2 /home/sahil/development/office_project/dpoerp/vendor/laravel/framework/src/Illuminate/Foundation/Console/Kernel.php(198): Symfony\\Component\\Console\\Application->run()
+#3 /home/sahil/development/office_project/dpoerp/vendor/laravel/framework/src/Illuminate/Foundation/Application.php(1235): Illuminate\\Foundation\\Console\\Kernel->handle()
+#4 /home/sahil/development/office_project/dpoerp/artisan(12): Illuminate\\Foundation\\Application->handleCommand()
+#5 {main}
+"} 
+[2026-06-22 14:47:02] local.ERROR: Command "tinker" is not defined. {"exception":"[object] (Symfony\\Component\\Console\\Exception\\CommandNotFoundException(code: 0): Command \"tinker\" is not defined. at /home/sahil/development/office_project/dpoerp/vendor/symfony/console/Application.php:759)
+[stacktrace]
+#0 /home/sahil/development/office_project/dpoerp/vendor/symfony/console/Application.php(298): Symfony\\Component\\Console\\Application->find()
+#1 /home/sahil/development/office_project/dpoerp/vendor/symfony/console/Application.php(195): Symfony\\Component\\Console\\Application->doRun()
+#2 /home/sahil/development/office_project/dpoerp/vendor/laravel/framework/src/Illuminate/Foundation/Console/Kernel.php(198): Symfony\\Component\\Console\\Application->run()
+#3 /home/sahil/development/office_project/dpoerp/vendor/laravel/framework/src/Illuminate/Foundation/Application.php(1235): Illuminate\\Foundation\\Console\\Kernel->handle()
+#4 /home/sahil/development/office_project/dpoerp/artisan(12): Illuminate\\Foundation\\Application->handleCommand()
+#5 {main}
+"} 
+[2026-06-22 15:23:42] local.ERROR: Command "tinker" is not defined. {"exception":"[object] (Symfony\\Component\\Console\\Exception\\CommandNotFoundException(code: 0): Command \"tinker\" is not defined. at /home/sahil/development/office_project/dpoerp/vendor/symfony/console/Application.php:759)
+[stacktrace]
+#0 /home/sahil/development/office_project/dpoerp/vendor/symfony/console/Application.php(298): Symfony\\Component\\Console\\Application->find()
+#1 /home/sahil/development/office_project/dpoerp/vendor/symfony/console/Application.php(195): Symfony\\Component\\Console\\Application->doRun()
+#2 /home/sahil/development/office_project/dpoerp/vendor/laravel/framework/src/Illuminate/Foundation/Console/Kernel.php(198): Symfony\\Component\\Console\\Application->run()
+#3 /home/sahil/development/office_project/dpoerp/vendor/laravel/framework/src/Illuminate/Foundation/Application.php(1235): Illuminate\\Foundation\\Console\\Kernel->handle()
+#4 /home/sahil/development/office_project/dpoerp/artisan(12): Illuminate\\Foundation\\Application->handleCommand()
+#5 {main}
+"} 
+[2026-06-22 15:23:58] local.ERROR: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'course' in 'SET' (Connection: mysql, Socket: /var/run/mysqld/mysqld.sock, Database: ssp_dpo_erp, SQL: update `computer_training_batches` set `course` = Diploma in Software Application, `computer_training_batches`.`updated_at` = 2026-06-22 15:23:58) {"exception":"[object] (Illuminate\\Database\\QueryException(code: 42S22): SQLSTATE[42S22]: Column not found: 1054 Unknown column 'course' in 'SET' (Connection: mysql, Socket: /var/run/mysqld/mysqld.sock, Database: ssp_dpo_erp, SQL: update `computer_training_batches` set `course` = Diploma in Software Application, `computer_training_batches`.`updated_at` = 2026-06-22 15:23:58) at /home/sahil/development/office_project/dpoerp/vendor/laravel/framework/src/Illuminate/Database/Connection.php:838)
+[stacktrace]
+#0 /home/sahil/development/office_project/dpoerp/vendor/laravel/framework/src/Illuminate/Database/Connection.php(794): Illuminate\\Database\\Connection->runQueryCallback()
+#1 /home/sahil/development/office_project/dpoerp/vendor/laravel/framework/src/Illuminate/Database/Connection.php(597): Illuminate\\Database\\Connection->run()
+#2 /home/sahil/development/office_project/dpoerp/vendor/laravel/framework/src/Illuminate/Database/Connection.php(549): Illuminate\\Database\\Connection->affectingStatement()
+#3 /home/sahil/development/office_project/dpoerp/vendor/laravel/framework/src/Illuminate/Database/Query/Builder.php(4234): Illuminate\\Database\\Connection->update()
+#4 /home/sahil/development/office_project/dpoerp/vendor/laravel/framework/src/Illuminate/Database/Eloquent/Builder.php(1266): Illuminate\\Database\\Query\\Builder->update()
+#5 /home/sahil/development/office_project/dpoerp/update_course.php(8): Illuminate\\Database\\Eloquent\\Builder->update()
+#6 {main}
+
+[previous exception] [object] (PDOException(code: 42S22): SQLSTATE[42S22]: Column not found: 1054 Unknown column 'course' in 'SET' at /home/sahil/development/office_project/dpoerp/vendor/laravel/framework/src/Illuminate/Database/Connection.php:605)
+[stacktrace]
+#0 /home/sahil/development/office_project/dpoerp/vendor/laravel/framework/src/Illuminate/Database/Connection.php(605): PDO->prepare()
+#1 /home/sahil/development/office_project/dpoerp/vendor/laravel/framework/src/Illuminate/Database/Connection.php(827): Illuminate\\Database\\Connection->Illuminate\\Database\\{closure}()
+#2 /home/sahil/development/office_project/dpoerp/vendor/laravel/framework/src/Illuminate/Database/Connection.php(794): Illuminate\\Database\\Connection->runQueryCallback()
+#3 /home/sahil/development/office_project/dpoerp/vendor/laravel/framework/src/Illuminate/Database/Connection.php(597): Illuminate\\Database\\Connection->run()
+#4 /home/sahil/development/office_project/dpoerp/vendor/laravel/framework/src/Illuminate/Database/Connection.php(549): Illuminate\\Database\\Connection->affectingStatement()
+#5 /home/sahil/development/office_project/dpoerp/vendor/laravel/framework/src/Illuminate/Database/Query/Builder.php(4234): Illuminate\\Database\\Connection->update()
+#6 /home/sahil/development/office_project/dpoerp/vendor/laravel/framework/src/Illuminate/Database/Eloquent/Builder.php(1266): Illuminate\\Database\\Query\\Builder->update()
+#7 /home/sahil/development/office_project/dpoerp/update_course.php(8): Illuminate\\Database\\Eloquent\\Builder->update()
+#8 {main}
+"} 

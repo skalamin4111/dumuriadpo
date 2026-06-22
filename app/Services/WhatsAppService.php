@@ -24,28 +24,67 @@ class WhatsAppService
             return false;
         }
 
-        /*
-         * ---------------------------------------------------------
-         * TODO: API INTEGRATION
-         * ---------------------------------------------------------
-         * Replace this log statement with an actual HTTP request to
-         * your chosen WhatsApp API Provider (Twilio, Meta, GreenAPI, etc.)
-         *
-         * Example using Http facade:
-         * Http::withToken(env('WHATSAPP_TOKEN'))->post('https://api.provider.com/send', [
-         *     'phone' => $formattedPhone,
-         *     'message' => $message,
-         *     'media_url' => $imageUrl
-         * ]);
-         */
+        $apiUrl = rtrim(env('EVOLUTION_API_URL', ''), '/');
+        $instance = env('EVOLUTION_API_INSTANCE', '');
+        $apiKey = env('EVOLUTION_API_KEY', '');
 
-        Log::info("WhatsAppService: [MOCK SEND]", [
-            'to' => $formattedPhone,
-            'message' => $message,
-            'image' => $imageUrl
-        ]);
+        if (empty($apiUrl) || empty($instance) || empty($apiKey)) {
+            Log::error("WhatsAppService: Evolution API credentials not configured in .env");
+            return false;
+        }
 
-        return true;
+        try {
+            if ($imageUrl) {
+                // Send Media Message
+                $endpoint = "{$apiUrl}/message/sendMedia/{$instance}";
+                $payload = [
+                    'number' => $formattedPhone,
+                    'options' => [
+                        'delay' => 1200,
+                        'presence' => 'composing'
+                    ],
+                    'mediaMessage' => [
+                        'mediatype' => 'image',
+                        'caption' => $message,
+                        'media' => $imageUrl
+                    ]
+                ];
+            } else {
+                // Send Text Message
+                $endpoint = "{$apiUrl}/message/sendText/{$instance}";
+                $payload = [
+                    'number' => $formattedPhone,
+                    'options' => [
+                        'delay' => 1200,
+                        'presence' => 'composing'
+                    ],
+                    'textMessage' => [
+                        'text' => $message
+                    ]
+                ];
+            }
+
+            $response = \Illuminate\Support\Facades\Http::withHeaders([
+                'apikey' => $apiKey
+            ])->post($endpoint, $payload);
+
+            if ($response->successful()) {
+                Log::info("WhatsAppService: Message sent successfully to {$formattedPhone} via Evolution API.");
+                return true;
+            }
+
+            Log::error("WhatsAppService: Failed to send message via Evolution API.", [
+                'phone' => $formattedPhone,
+                'status' => $response->status(),
+                'response' => $response->json()
+            ]);
+
+            return false;
+
+        } catch (\Exception $e) {
+            Log::error("WhatsAppService: Exception when sending message via Evolution API: " . $e->getMessage());
+            return false;
+        }
     }
 
     /**

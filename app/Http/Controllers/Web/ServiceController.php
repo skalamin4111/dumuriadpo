@@ -72,7 +72,17 @@ class ServiceController extends Controller
                     'upcoming_classes' => ComputerTrainingClassSchedule::whereDate('class_date', '>=', today())->count(),
                     'open_leads' => ComputerTrainingMarketingLead::whereIn('status', ['new', 'contacted', 'interested'])->count(),
                 ],
-                'students' => ComputerTrainingStudent::with('batch')->latest()->paginate($perPage, ['*'], 'student_page'),
+                'students' => ComputerTrainingStudent::with('batch')
+                    ->when(request('student_search'), function ($q, $v) {
+                        $q->where(function ($q2) use ($v) {
+                            $q2->where('name', 'like', "%{$v}%")
+                               ->orWhere('phone', 'like', "%{$v}%")
+                               ->orWhere('student_id', 'like', "%{$v}%");
+                        });
+                    })
+                    ->when(request('student_batch'), fn($q, $v) => $q->where('batch_id', $v))
+                    ->when(request('student_status'), fn($q, $v) => $q->where('status', $v))
+                    ->latest()->paginate($perPage, ['*'], 'student_page')->withQueryString(),
                 'batches' => \App\Models\ComputerTrainingBatch::with(['students'])->withCount('students')->orderBy('type')->orderByRaw('LENGTH(name)')->orderBy('name')->get(),
             ]);
         }

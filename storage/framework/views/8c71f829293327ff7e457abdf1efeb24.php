@@ -245,7 +245,7 @@
                                     </div>
                                     <div class="space-y-2">
                                         <label class="text-sm font-medium text-slate-700 dark:text-slate-300">ক্রমিক নং / Serial No (Student ID)</label>
-                                        <input class="field" name="student_id" x-model="student.student_id" placeholder="Optional custom ID" x-effect="if (student.session) { student.student_id = student.session.replace('-', '') + (student.seat_number ? String(student.seat_number).padStart(2, '0') : '') }">
+                                        <input class="field" name="student_id" x-model="student.student_id" placeholder="Optional custom ID" x-effect="if (student.session) { student.student_id = student.session.substring(2).replace('-', '') + (student.seat_number ? String(student.seat_number).padStart(2, '0') : '') }">
                                     </div>
                                 </div>
 
@@ -390,51 +390,150 @@
                 </div>
             </template>
 
-<div class="flex flex-col gap-4 sm:flex-row sm:items-center justify-between p-4 border-b border-slate-200 dark:border-slate-800">
-                    <h3 class="font-semibold text-slate-800 dark:text-slate-200">Student List</h3>
-                    <div class="flex flex-wrap items-center gap-3">
-                        <button type="button" @click="student = { id: null, name: '', name_bn: '', father_name: '', mother_name: '', date_of_birth: '', nid_or_birth_reg: '', nationality: 'Bangladeshi', gender: '', marital_status: '', religion: '', educational_qualifications: [{}, {}], course: '', duration: '', session: '', admission_date: '<?php echo e(now()->toDateString()); ?>', student_id: '', guardian_name: '', guardian_phone: '', status: 'admitted', notes: '', address: '', phone: '', email: '', batch_id: '', seat_number: '' }" class="btn btn-primary shrink-0">Add New Student</button>
-                        <form method="GET" action="<?php echo e(url()->current()); ?>" class="flex items-center gap-2">
-                            <input type="hidden" name="tab" value="students">
-                            <select name="per_page" onchange="this.form.submit()" class="field text-sm py-1.5 pl-3 pr-8 w-auto">
-                                <option value="10" <?php if(request('per_page') == 10): echo 'selected'; endif; ?>>10 per page</option>
-                                <option value="25" <?php if(request('per_page') == 25): echo 'selected'; endif; ?>>25 per page</option>
-                                <option value="50" <?php if(request('per_page') == 50): echo 'selected'; endif; ?>>50 per page</option>
-                                <option value="100" <?php if(request('per_page') == 100): echo 'selected'; endif; ?>>100 per page</option>
-                            </select>
-                        </form>
+<div class="p-4 border-b border-slate-200 dark:border-slate-800 space-y-4">
+                    <!-- Top Row: Title & Actions -->
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                        <h3 class="font-semibold text-lg text-slate-800 dark:text-slate-200">Student List</h3>
+                        <div class="flex flex-wrap items-center gap-3">
+                            <button type="button" @click="student = { id: null, name: '', name_bn: '', father_name: '', mother_name: '', date_of_birth: '', nid_or_birth_reg: '', nationality: 'Bangladeshi', gender: '', marital_status: '', religion: '', educational_qualifications: [{}, {}], course: 'Diploma in Software Application', duration: '', session: '', admission_date: '<?php echo e(now()->toDateString()); ?>', student_id: '', guardian_name: '', guardian_phone: '', status: 'admitted', notes: '', address: '', phone: '', email: '', batch_id: '', seat_number: '' }" class="btn btn-primary shrink-0 flex items-center gap-1.5">
+                                <svg class="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                                Add New Student
+                            </button>
+                            <form method="POST" action="<?php echo e(route('computer-training.students.sync-google-sheet')); ?>" class="inline">
+                                <?php echo csrf_field(); ?>
+                                <button type="submit" class="btn btn-secondary shrink-0 flex items-center gap-2" onclick="return confirm('This will sync admitted students from Google Sheets. Are you sure?')">
+                                    <svg class="size-4 text-emerald-600 dark:text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                                    Sync Google Sheet
+                                </button>
+                            </form>
+                        </div>
                     </div>
+
+                    <!-- Bottom Row: Filters -->
+                    <form method="GET" action="<?php echo e(url()->current()); ?>" class="flex flex-col lg:flex-row lg:items-center gap-3 bg-slate-50 dark:bg-slate-900/50 p-3 rounded-xl border border-slate-100 dark:border-slate-800/60">
+                        <input type="hidden" name="tab" value="students">
+                        
+                        <div class="relative flex-1">
+                            <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                                <svg class="size-5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                            </div>
+                            <input type="text" name="student_search" value="<?php echo e(request('student_search')); ?>" placeholder="Search by name, ID, phone..." class="w-full pl-10 pr-4 py-2 text-sm bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 outline-none transition-all placeholder:text-slate-400 dark:text-slate-200 shadow-sm">
+                        </div>
+
+                        <div class="flex flex-wrap items-center gap-3">
+                            <select name="student_batch" class="py-2 pl-3 pr-8 text-sm bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 outline-none transition-all dark:text-slate-200 shadow-sm min-w-[140px] appearance-none" style="background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%2394a3b8%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E'); background-repeat: no-repeat, repeat; background-position: right .7em top 50%, 0 0; background-size: .65em auto, 100%;">
+                                <option value="">All Batches</option>
+                                <?php $__currentLoopData = $batches; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $batch): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                                    <option value="<?php echo e($batch->id); ?>" <?php if(request('student_batch') == $batch->id): echo 'selected'; endif; ?>><?php echo e($batch->name); ?></option>
+                                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+                            </select>
+
+                            <select name="student_status" class="py-2 pl-3 pr-8 text-sm bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 outline-none transition-all dark:text-slate-200 shadow-sm min-w-[130px] appearance-none" style="background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%2394a3b8%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E'); background-repeat: no-repeat, repeat; background-position: right .7em top 50%, 0 0; background-size: .65em auto, 100%;">
+                                <option value="">All Statuses</option>
+                                <option value="admitted" <?php if(request('student_status') == 'admitted'): echo 'selected'; endif; ?>>Admitted</option>
+                                <option value="active" <?php if(request('student_status') == 'active'): echo 'selected'; endif; ?>>Active</option>
+                                <option value="completed" <?php if(request('student_status') == 'completed'): echo 'selected'; endif; ?>>Completed</option>
+                                <option value="dropped" <?php if(request('student_status') == 'dropped'): echo 'selected'; endif; ?>>Dropped</option>
+                            </select>
+
+                            <div class="h-6 w-px bg-slate-200 dark:bg-slate-700 hidden sm:block"></div>
+
+                            <select name="per_page" class="py-2 pl-3 pr-8 text-sm bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 outline-none transition-all dark:text-slate-200 shadow-sm appearance-none" style="background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%2394a3b8%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E'); background-repeat: no-repeat, repeat; background-position: right .7em top 50%, 0 0; background-size: .65em auto, 100%;">
+                                <option value="10" <?php if(request('per_page') == 10): echo 'selected'; endif; ?>>10 / page</option>
+                                <option value="25" <?php if(request('per_page') == 25): echo 'selected'; endif; ?>>25 / page</option>
+                                <option value="50" <?php if(request('per_page') == 50): echo 'selected'; endif; ?>>50 / page</option>
+                                <option value="100" <?php if(request('per_page') == 100): echo 'selected'; endif; ?>>100 / page</option>
+                            </select>
+                            
+                            <button type="submit" class="bg-teal-600 hover:bg-teal-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors shadow-sm flex items-center gap-1.5 shrink-0">
+                                <svg class="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"></path></svg>
+                                Apply
+                            </button>
+                            <?php if(request()->hasAny(['student_search', 'student_batch', 'student_status'])): ?>
+                                <a href="<?php echo e(url()->current()); ?>?tab=students" class="text-sm font-medium text-rose-500 hover:text-rose-700 bg-rose-50 hover:bg-rose-100 dark:bg-rose-500/10 dark:hover:bg-rose-500/20 px-3 py-2 rounded-lg transition-colors flex items-center gap-1.5 shrink-0">
+                                    <svg class="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                                    Clear
+                                </a>
+                            <?php endif; ?>
+                        </div>
+                    </form>
                 </div>
                 <table class="w-full text-left text-sm">
                     <thead class="table-head"><tr><th class="px-4 py-3">Student</th><th class="px-4 py-3">Course</th><th class="px-4 py-3">Phone</th><th class="px-4 py-3">Status</th><th class="px-4 py-3 text-right">Actions</th></tr></thead>
                     <tbody class="divide-y divide-slate-200 dark:divide-slate-800">
                         <?php $__empty_1 = true; $__currentLoopData = $students; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $student): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); $__empty_1 = false; ?>
-                            <tr class="table-row cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800/50" @click="viewStudent = <?php echo e(Js::from($student)); ?>">
-                            <td class="px-4 py-3 font-medium">
-                                <?php echo e($student->name); ?>
+                            <tr class="group border-b border-slate-100 dark:border-slate-800/60 hover:bg-slate-50/80 dark:hover:bg-slate-800/50 transition-colors cursor-pointer" @click="viewStudent = <?php echo e(Js::from($student)); ?>">
+                                <td class="px-4 py-4">
+                                    <div class="flex items-center gap-3">
+                                        <div class="flex-shrink-0 h-10 w-10 rounded-full bg-gradient-to-br from-teal-500 to-emerald-500 flex items-center justify-center text-white font-bold shadow-sm">
+                                            <?php echo e(strtoupper(substr($student->name, 0, 1))); ?>
 
-                                <span class="block text-xs text-slate-500">
-                                    <?php echo e($student->student_id); ?> 
-                                    <?php if($student->batch): ?> &bull; <span class="font-medium text-teal-600"><?php echo e($student->batch->name); ?> (Seat: <?php echo e($student->seat_number ?? 'N/A'); ?>)</span> <?php endif; ?>
-                                </span>
-                            </td>
-                            <td class="px-4 py-3"><?php echo e($student->course); ?></td>
-                            <td class="px-4 py-3"><?php echo e($student->phone ?? 'N/A'); ?></td>
-                            <td class="px-4 py-3"><?php echo e(ucfirst($student->status)); ?></td>
-                            <td class="px-4 py-3 text-right">
-                                <div class="flex items-center justify-end gap-2">
-                                    <button type="button" @click.stop="viewStudent = <?php echo e(Js::from($student)); ?>" class="text-indigo-600 hover:text-indigo-800 transition" title="View Details"><svg class="size-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg></button>
-                                    <button type="button" @click.stop="student = Object.assign({}, <?php echo e(Js::from($student)); ?>, { educational_qualifications: (<?php echo e(Js::from($student)); ?>.educational_qualifications || []).concat([{}, {}]).slice(0, 2) })" class="text-teal-600 hover:text-teal-800 transition"><svg class="size-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg></button>
-                                    <form method="POST" action="<?php echo e(route('computer-training.students.destroy', $student)); ?>" onsubmit="return confirm('Are you sure you want to delete this student?')">
-                                        <?php echo csrf_field(); ?>
-                                        <?php echo method_field('DELETE'); ?>
-                                        <button type="submit" @click.stop class="text-rose-600 hover:text-rose-800 transition"><svg class="size-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg></button>
-                                    </form>
-                                </div>
-                            </td>
-                        </tr>
+                                        </div>
+                                        <div>
+                                            <div class="font-semibold text-slate-900 dark:text-slate-100 group-hover:text-teal-600 dark:group-hover:text-teal-400 transition-colors">
+                                                <?php echo e($student->name); ?>
+
+                                            </div>
+                                            <div class="flex items-center gap-2 mt-0.5 text-xs text-slate-500 dark:text-slate-400">
+                                                <span class="inline-flex items-center gap-1">
+                                                    <svg class="size-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V8a2 2 0 00-2-2h-5m-4 0V5a2 2 0 114 0v1m-4 0a2 2 0 104 0m-5 8a2 2 0 100-4 2 2 0 000 4zm0 0c1.306 0 2.417.835 2.83 2M9 14a3.001 3.001 0 00-2.83 2M15 11h3m-3 4h2" /></svg>
+                                                    <?php echo e($student->student_id); ?>
+
+                                                </span>
+                                                <?php if($student->batch): ?> 
+                                                    <span class="w-1 h-1 rounded-full bg-slate-300 dark:bg-slate-600"></span>
+                                                    <span class="inline-flex items-center gap-1 font-medium text-teal-600 dark:text-teal-400 bg-teal-50 dark:bg-teal-500/10 px-1.5 py-0.5 rounded-md">
+                                                        <svg class="size-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" /></svg>
+                                                        <?php echo e($student->batch->name); ?> (Seat: <?php echo e($student->seat_number ?? 'N/A'); ?>)
+                                                    </span>
+                                                <?php endif; ?>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td class="px-4 py-4 text-slate-600 dark:text-slate-300"><?php echo e($student->course); ?></td>
+                                <td class="px-4 py-4 text-slate-600 dark:text-slate-300">
+                                    <div class="flex items-center gap-1.5">
+                                        <svg class="size-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" /></svg>
+                                        <?php echo e($student->phone ?? 'N/A'); ?>
+
+                                    </div>
+                                </td>
+                                <td class="px-4 py-4">
+                                    <?php
+                                        $statusColors = [
+                                            'admitted' => 'bg-blue-100 text-blue-700 dark:bg-blue-500/20 dark:text-blue-400 border border-blue-200 dark:border-blue-500/30',
+                                            'active' => 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-500/30',
+                                            'completed' => 'bg-purple-100 text-purple-700 dark:bg-purple-500/20 dark:text-purple-400 border border-purple-200 dark:border-purple-500/30',
+                                            'dropped' => 'bg-rose-100 text-rose-700 dark:bg-rose-500/20 dark:text-rose-400 border border-rose-200 dark:border-rose-500/30',
+                                        ];
+                                        $colorClass = $statusColors[strtolower($student->status)] ?? 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300 border border-slate-200 dark:border-slate-700';
+                                    ?>
+                                    <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold <?php echo e($colorClass); ?>">
+                                        <?php echo e(ucfirst($student->status)); ?>
+
+                                    </span>
+                                </td>
+                                <td class="px-4 py-4 text-right">
+                                    <div class="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                        <button type="button" @click.stop="viewStudent = <?php echo e(Js::from($student)); ?>" class="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-500/10 rounded-lg transition-all" title="View Details">
+                                            <svg class="size-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
+                                        </button>
+                                        <button type="button" @click.stop="student = Object.assign({}, <?php echo e(Js::from($student)); ?>, { educational_qualifications: (<?php echo e(Js::from($student)); ?>.educational_qualifications || []).concat([{}, {}]).slice(0, 2) })" class="p-1.5 text-slate-400 hover:text-teal-600 hover:bg-teal-50 dark:hover:bg-teal-500/10 rounded-lg transition-all" title="Edit Student">
+                                            <svg class="size-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+                                        </button>
+                                        <form method="POST" action="<?php echo e(route('computer-training.students.destroy', $student)); ?>" onsubmit="return confirm('Are you sure you want to delete this student?')" class="inline">
+                                            <?php echo csrf_field(); ?>
+                                            <?php echo method_field('DELETE'); ?>
+                                            <button type="submit" @click.stop class="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-500/10 rounded-lg transition-all" title="Delete Student">
+                                                <svg class="size-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                                            </button>
+                                        </form>
+                                    </div>
+                                </td>
+                            </tr>
                         <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); if ($__empty_1): ?>
-                            <tr><td class="px-4 py-5 text-center text-slate-500" colspan="4">No students found.</td></tr>
+                            <tr><td class="px-4 py-8 text-center text-slate-500" colspan="5">No students found. Try clearing your filters or adding a new student.</td></tr>
                         <?php endif; ?>
                     </tbody>
                 </table>
@@ -987,42 +1086,42 @@
                 </div>
             </template>
 
-            <form method="GET" action="<?php echo e(url()->current()); ?>" class="flex flex-col sm:flex-row gap-3 mb-6 bg-slate-50 dark:bg-slate-800/50 p-4 rounded-xl border border-slate-200 dark:border-slate-800">
+            <form method="GET" action="<?php echo e(url()->current()); ?>" class="flex flex-col lg:flex-row lg:items-center gap-3 bg-slate-50 dark:bg-slate-900/50 p-3 rounded-xl border border-slate-100 dark:border-slate-800/60 mb-6">
                 <input type="hidden" name="tab" value="attendance">
                 
-                <div class="flex-1">
-                    <input type="date" name="attendance_date" value="<?php echo e(request('attendance_date')); ?>" class="field w-full" placeholder="Date">
+                <div class="relative flex-[2]">
+                    <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                        <svg class="size-5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                    </div>
+                    <input type="text" name="attendance_search" value="<?php echo e(request('attendance_search')); ?>" placeholder="Search name, phone, ID..." class="w-full pl-10 pr-4 py-2 text-sm bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 outline-none transition-all placeholder:text-slate-400 dark:text-slate-200 shadow-sm">
                 </div>
-                
-                <div class="flex-1">
-                    <select name="attendance_course" class="field w-full">
+
+                <div class="flex flex-wrap items-center gap-3 flex-[3]">
+                    <input type="date" name="attendance_date" value="<?php echo e(request('attendance_date')); ?>" class="flex-1 py-2 px-3 text-sm bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 outline-none transition-all dark:text-slate-200 shadow-sm">
+                    
+                    <select name="attendance_course" class="flex-1 py-2 pl-3 pr-8 text-sm bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 outline-none transition-all dark:text-slate-200 shadow-sm appearance-none" style="background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%2394a3b8%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E'); background-repeat: no-repeat, repeat; background-position: right .7em top 50%, 0 0; background-size: .65em auto, 100%;">
                         <option value="">All Courses</option>
                         <?php $__currentLoopData = $courses; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $c): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
                             <option value="<?php echo e($c); ?>" <?php echo e(request('attendance_course') == $c ? 'selected' : ''); ?>><?php echo e($c); ?></option>
                         <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
                     </select>
-                </div>
 
-                <div class="flex-1">
-                    <select name="attendance_batch" class="field w-full">
+                    <select name="attendance_batch" class="flex-1 py-2 pl-3 pr-8 text-sm bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 outline-none transition-all dark:text-slate-200 shadow-sm appearance-none" style="background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%2394a3b8%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E'); background-repeat: no-repeat, repeat; background-position: right .7em top 50%, 0 0; background-size: .65em auto, 100%;">
                         <option value="">All Batches</option>
                         <?php $__currentLoopData = \App\Models\ComputerTrainingBatch::orderBy('name')->get(); $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $b): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
                             <option value="<?php echo e($b->id); ?>" <?php echo e(request('attendance_batch') == $b->id ? 'selected' : ''); ?>><?php echo e($b->name); ?></option>
                         <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
                     </select>
-                </div>
-                
-                <div class="flex-[2]">
-                    <div class="relative">
-                        <input type="text" name="attendance_search" value="<?php echo e(request('attendance_search')); ?>" class="field w-full pl-10" placeholder="Search name, phone, ID...">
-                        <svg class="size-5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
-                    </div>
-                </div>
 
-                <div class="flex items-center gap-2">
-                    <button type="submit" class="btn btn-primary px-4 py-2 w-full sm:w-auto">Filter</button>
+                    <button type="submit" class="bg-teal-600 hover:bg-teal-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors shadow-sm flex items-center gap-1.5 shrink-0">
+                        <svg class="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"></path></svg>
+                        Apply
+                    </button>
                     <?php if(request('attendance_date') || request('attendance_course') || request('attendance_batch') || request('attendance_search')): ?>
-                        <a href="<?php echo e(url()->current()); ?>?tab=attendance" class="btn bg-slate-200 text-slate-700 hover:bg-slate-300 dark:bg-slate-700 dark:text-slate-300 dark:hover:bg-slate-600 px-4 py-2">Clear</a>
+                        <a href="<?php echo e(url()->current()); ?>?tab=attendance" class="text-sm font-medium text-rose-500 hover:text-rose-700 bg-rose-50 hover:bg-rose-100 dark:bg-rose-500/10 dark:hover:bg-rose-500/20 px-3 py-2 rounded-lg transition-colors flex items-center gap-1.5 shrink-0">
+                            <svg class="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                            Clear
+                        </a>
                     <?php endif; ?>
                 </div>
             </form>

@@ -125,6 +125,127 @@ class ComputerTrainingController extends Controller
         return back()->with('status', 'Student deleted successfully.');
     }
 
+    public function syncAdmittedStudents(Request $request): RedirectResponse
+    {
+        $url = 'https://docs.google.com/spreadsheets/d/1ca1k65_IuGOGHgbJQTNKbVkqzLk1CH9Lizu5exDOLIs/export?format=csv&gid=1676498509';
+        
+        try {
+            $csvData = file_get_contents($url);
+            if (!$csvData) {
+                return back()->with('error', 'Failed to fetch data from Google Sheets.');
+            }
+
+            $lines = explode(PHP_EOL, $csvData);
+            $header = str_getcsv(array_shift($lines));
+            
+            $syncedCount = 0;
+            $companyId = $request->user() ? $request->user()->company_id : 1;
+
+            foreach ($lines as $line) {
+                if (empty(trim($line))) continue;
+                
+                $row = str_getcsv($line);
+                if (count($row) < 11) continue;
+
+                $sheetSerial = trim($row[0]);
+                $batchName = trim($row[1]);
+                $studentName = trim($row[3]);
+                $fatherName = trim($row[4]);
+                $motherName = trim($row[5]);
+                $schoolName = trim($row[6]);
+                $dob = trim($row[7]);
+                $rollNo = trim($row[8]);
+                $regNo = trim($row[9]);
+                $mobile = trim($row[10]);
+
+                if (empty($studentName)) continue;
+
+                // Build notes
+                $notes = [];
+                if ($schoolName) $notes[] = "School: " . $schoolName;
+                if ($motherName) $notes[] = "Mother: " . $motherName;
+                if ($dob) $notes[] = "DOB: " . $dob;
+                if ($rollNo) $notes[] = "Roll: " . $rollNo;
+                if ($regNo) $notes[] = "Reg No: " . $regNo;
+                $notesString = implode("\n", $notes);
+
+                // Find or create batch
+                $batchId = null;
+                if ($batchName) {
+                    $batch = \App\Models\ComputerTrainingBatch::firstOrCreate(
+                        ['company_id' => $companyId, 'name' => $batchName],
+                        [
+                            'type' => 'regular',
+                            'capacity' => 15,
+                        ]
+                    );
+                    $batchId = $batch->id;
+                }
+
+                // If mobile is empty, try to match by name and father's name
+                $matchQuery = \App\Models\ComputerTrainingStudent::where('company_id', $companyId);
+                if (!empty($mobile)) {
+                    $matchQuery->where('phone', $mobile);
+                } else {
+                    $matchQuery->where('name', $studentName)->where('guardian_name', $fatherName);
+                }
+
+                $student = $matchQuery->first();
+
+                $session = date('Y') . '-1';
+
+                $seatNumber = null;
+                if (is_numeric($sheetSerial) && $sheetSerial > 0) {
+                    $seatNumber = (int) $sheetSerial;
+                }
+
+                if ($student) {
+                    $updateData = [
+                        'name' => $studentName,
+                        'guardian_name' => $fatherName,
+                        'batch_id' => $batchId,
+                        'notes' => $notesString ? ($student->notes ? $student->notes . "\n" . $notesString : $notesString) : $student->notes,
+                    ];
+                    
+                    if ($seatNumber !== null) {
+                        $updateData['seat_number'] = $seatNumber;
+                        $updateData['student_id'] = substr(str_replace('-', '', $session), 2) . str_pad($seatNumber, 2, '0', STR_PAD_LEFT);
+                    }
+                    
+                    $student->update($updateData);
+                } else {
+                    // Generate student ID
+                    if ($seatNumber === null) {
+                        $seatNumber = \App\Models\ComputerTrainingStudent::where('company_id', $companyId)->where('batch_id', $batchId)->max('seat_number') + 1;
+                    }
+                    $studentId = substr(str_replace('-', '', $session), 2) . str_pad($seatNumber, 2, '0', STR_PAD_LEFT);
+
+                    \App\Models\ComputerTrainingStudent::create([
+                        'company_id' => $companyId,
+                        'name' => $studentName,
+                        'phone' => $mobile,
+                        'guardian_name' => $fatherName,
+                        'course' => 'Diploma in Software Application',
+                        'batch_id' => $batchId,
+                        'admission_date' => now(),
+                        'session' => $session,
+                        'seat_number' => $seatNumber,
+                        'student_id' => $studentId,
+                        'status' => 'active',
+                        'notes' => $notesString
+                    ]);
+                }
+                $syncedCount++;
+            }
+
+            return back()->with('status', "Successfully synced {$syncedCount} admitted students from Google Sheets!");
+
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error("Google Sheets Sync Error: " . $e->getMessage());
+            return back()->with('error', 'Error syncing data: ' . $e->getMessage());
+        }
+    }
+
     public function storeBatch(Request $request): RedirectResponse
     {
         $data = $request->validate([
