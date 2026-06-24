@@ -1950,3 +1950,13 @@ jdlksjdl","image":null}
 #7 /home/sahil/development/office_project/dpoerp/update_course.php(8): Illuminate\\Database\\Eloquent\\Builder->update()
 #8 {main}
 "} 
+[2026-06-24 11:55:48] local.ERROR: Google Sheets Sync Error: file_get_contents(): php_network_getaddresses: getaddrinfo for docs.google.com failed: Try again  
+[2026-06-24 12:29:35] local.ERROR: Command "tinker" is not defined. {"exception":"[object] (Symfony\\Component\\Console\\Exception\\CommandNotFoundException(code: 0): Command \"tinker\" is not defined. at /home/sahil/development/office_project/dpoerp/vendor/symfony/console/Application.php:759)
+[stacktrace]
+#0 /home/sahil/development/office_project/dpoerp/vendor/symfony/console/Application.php(298): Symfony\\Component\\Console\\Application->find()
+#1 /home/sahil/development/office_project/dpoerp/vendor/symfony/console/Application.php(195): Symfony\\Component\\Console\\Application->doRun()
+#2 /home/sahil/development/office_project/dpoerp/vendor/laravel/framework/src/Illuminate/Foundation/Console/Kernel.php(198): Symfony\\Component\\Console\\Application->run()
+#3 /home/sahil/development/office_project/dpoerp/vendor/laravel/framework/src/Illuminate/Foundation/Application.php(1235): Illuminate\\Foundation\\Console\\Kernel->handle()
+#4 /home/sahil/development/office_project/dpoerp/artisan(12): Illuminate\\Foundation\\Application->handleCommand()
+#5 {main}
+"} 

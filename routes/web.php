@@ -38,6 +38,7 @@ Route::middleware(['auth', 'active', 'tenant'])->group(function () {
     Route::post('/services/computer-training/students/sync-google-sheet', [ComputerTrainingController::class, 'syncAdmittedStudents'])->name('computer-training.students.sync-google-sheet');
     Route::post('/services/computer-training/attendance/bulk', [ComputerTrainingController::class, 'storeBulkAttendance'])->name('computer-training.attendance.bulk');
     Route::get('/services/computer-training/batches/{batch}/students', [ComputerTrainingController::class, 'getBatchStudents'])->name('computer-training.batches.students');
+    Route::put('/services/computer-training/attendance/{attendance}', [ComputerTrainingController::class, 'updateAttendance'])->name('computer-training.attendance.update');
     
     Route::post('/services/computer-training/attendance', [ComputerTrainingController::class, 'storeAttendance'])->name('computer-training.attendance.store');
     Route::post('/services/computer-training/classes', [ComputerTrainingController::class, 'storeClassSchedule'])->name('computer-training.classes.store');

@@ -914,6 +914,7 @@
             attendanceDate: '{{ now()->toDateString() }}',
             students: [], 
             loading: false,
+            editAttendance: null,
             
             fetchStudents() {
                 if(!this.selectedBatchId) {
@@ -928,8 +929,10 @@
                             student_id: s.id,
                             seat_number: s.seat_number,
                             name: s.name,
+                            phone: s.phone,
                             status: '', // default empty, checker must select
-                            daily_rank: '' // default empty
+                            daily_rank: '', // default empty
+                            remarks: '' // default empty
                         }));
                         this.loading = false;
                     });
@@ -1012,7 +1015,7 @@
                                                 <th class="px-4 py-3 font-semibold text-slate-700 dark:text-slate-300">Student Name</th>
                                                 <th class="px-4 py-3 font-semibold text-green-700 dark:text-green-400 text-center w-24">Present</th>
                                                 <th class="px-4 py-3 font-semibold text-red-700 dark:text-red-400 text-center w-24">Absent</th>
-                                                <th class="px-4 py-3 font-semibold text-amber-700 dark:text-amber-500 w-40 text-center">Best Student</th>
+                                                <th class="px-4 py-3 font-semibold text-amber-700 dark:text-amber-500 w-56 text-center">Rank / Note</th>
                                             </tr>
                                         </thead>
                                         <tbody class="divide-y divide-slate-100 dark:divide-slate-800/50">
@@ -1026,7 +1029,10 @@
                                                     <td class="px-4 py-3">
                                                         <div class="flex items-center gap-3">
                                                             <div class=" rounded-full bg-indigo-100 dark:bg-indigo-900/50 text-indigo-600 dark:text-indigo-400 flex items-center justify-center font-bold text-xs shrink-0" style="width: 2rem; height: 2rem;" x-text="s.name.charAt(0)"></div>
-                                                            <span class="font-medium text-slate-800 dark:text-slate-200" x-text="s.name"></span>
+                                                            <div>
+                                                                <span class="font-medium text-slate-800 dark:text-slate-200 block" x-text="s.name"></span>
+                                                                <span class="text-xs text-slate-500 dark:text-slate-400 block" x-text="s.phone || 'No Phone'"></span>
+                                                            </div>
                                                         </div>
                                                     </td>
                                                     <td class="px-4 py-3 text-center">
@@ -1046,12 +1052,20 @@
                                                         </label>
                                                     </td>
                                                     <td class="px-4 py-3">
-                                                        <select :name="`attendances[${index}][daily_rank]`" x-model="s.daily_rank" class="bg-slate-50 border border-slate-300 text-slate-900 text-sm rounded-lg focus:ring-amber-500 focus:border-amber-500 block w-full p-2 dark:bg-slate-700 dark:border-slate-600 dark:placeholder-slate-400 dark:text-white dark:focus:ring-amber-500 dark:focus:border-amber-500">
-                                                            <option value="">None</option>
-                                                            <option value="1">1st Place 🏆</option>
-                                                            <option value="2">2nd Place 🥈</option>
-                                                            <option value="3">3rd Place 🥉</option>
-                                                        </select>
+                                                        <template x-if="s.status === 'present'">
+                                                            <select :name="`attendances[${index}][daily_rank]`" x-model="s.daily_rank" class="bg-slate-50 border border-slate-300 text-slate-900 text-sm rounded-lg focus:ring-amber-500 focus:border-amber-500 block w-full p-2 dark:bg-slate-700 dark:border-slate-600 dark:placeholder-slate-400 dark:text-white dark:focus:ring-amber-500 dark:focus:border-amber-500">
+                                                                <option value="">None</option>
+                                                                <option value="1">1st Place 🏆</option>
+                                                                <option value="2">2nd Place 🥈</option>
+                                                                <option value="3">3rd Place 🥉</option>
+                                                            </select>
+                                                        </template>
+                                                        <template x-if="s.status === 'absent'">
+                                                            <input type="text" :name="`attendances[${index}][remarks]`" x-model="s.remarks" placeholder="Reason/Note..." class="bg-slate-50 border border-slate-300 text-slate-900 text-sm rounded-lg focus:ring-rose-500 focus:border-rose-500 block w-full p-2 dark:bg-slate-700 dark:border-slate-600 dark:placeholder-slate-400 dark:text-white dark:focus:ring-rose-500 dark:focus:border-rose-500">
+                                                        </template>
+                                                        <template x-if="!s.status">
+                                                            <div class="text-center text-xs text-slate-400 dark:text-slate-500 italic py-2">Select status first</div>
+                                                        </template>
                                                     </td>
                                                 </tr>
                                             </template>
@@ -1063,6 +1077,94 @@
                             <div class="p-6 border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50 shrink-0 flex justify-end gap-3 rounded-b-2xl">
                                 <button type="button" @click="showBulkModal = false" class="btn bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700">Cancel</button>
                                 <button type="submit" class="btn btn-primary px-8" :disabled="students.length === 0 || loading">Save Attendance</button>
+                            </div>
+                        </form>
+                    </div>
+                                </div>
+                            </template>
+
+            <!-- Edit Attendance Modal -->
+            <template x-teleport="body">
+                <div x-show="editAttendance !== null" 
+                     class="fixed inset-0 z-[100] overflow-y-auto bg-slate-950/60 backdrop-blur-sm flex items-start justify-center p-4 sm:p-6 md:py-12" 
+                     style="display:none"
+                     x-transition.opacity>
+                    
+                    <div class="w-full max-w-lg bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 relative flex flex-col" @click.self="editAttendance = null">
+                        
+                        <div class="p-6 border-b border-slate-200 dark:border-slate-800 flex justify-between items-center bg-slate-50 dark:bg-slate-800/50 rounded-t-2xl shrink-0">
+                            <h2 class="font-bold text-xl text-slate-800 dark:text-slate-200">Edit Attendance Record</h2>
+                            <button type="button" @click="editAttendance = null" class="text-slate-400 hover:text-slate-600 transition bg-white dark:bg-slate-800 rounded-full p-2 shadow-sm border border-slate-200 dark:border-slate-700">
+                                <svg class="size-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                            </button>
+                        </div>
+
+                        <form :action="editAttendance ? `/services/computer-training/attendance/${editAttendance.id}` : ''" method="POST" class="flex flex-col">
+                            @csrf
+                            @method('PUT')
+
+                            <div class="p-6 space-y-4" x-data="{ 
+                                get formattedDate() {
+                                    if (!editAttendance || !editAttendance.attendance_date) return '';
+                                    const parts = editAttendance.attendance_date.split('-');
+                                    if (parts.length !== 3) return editAttendance.attendance_date;
+                                    const date = new Date(parts[0], parts[1] - 1, parts[2]);
+                                    return date.toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+                                }
+                            }">
+                                <div>
+                                    <span class="text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Student</span>
+                                    <p class="text-base font-semibold text-slate-800 dark:text-slate-200 mt-0.5" x-text="editAttendance?.student?.name || 'N/A'"></p>
+                                </div>
+
+                                <div class="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <span class="text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Date</span>
+                                        <p class="text-sm text-slate-700 dark:text-slate-300 mt-0.5" x-text="formattedDate"></p>
+                                    </div>
+                                    <div x-show="editAttendance?.student?.batch?.name">
+                                        <span class="text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Batch</span>
+                                        <p class="text-sm text-slate-700 dark:text-slate-300 mt-0.5" x-text="editAttendance?.student?.batch?.name || ''"></p>
+                                    </div>
+                                </div>
+
+                                <div class="space-y-2">
+                                    <label class="text-sm font-medium text-slate-700 dark:text-slate-300 block">Attendance Status</label>
+                                    <div class="flex gap-4">
+                                        <label class="cursor-pointer group relative flex-1">
+                                            <input type="radio" name="status" value="present" x-model="editAttendance.status" class="peer sr-only" required>
+                                            <div class="py-2.5 text-center rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-400 font-semibold text-sm peer-checked:bg-green-500 peer-checked:border-green-500 peer-checked:text-white transition-all duration-200 font-semibold tracking-wide uppercase">
+                                                Present
+                                            </div>
+                                        </label>
+                                        <label class="cursor-pointer group relative flex-1">
+                                            <input type="radio" name="status" value="absent" x-model="editAttendance.status" class="peer sr-only" required>
+                                            <div class="py-2.5 text-center rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-400 font-semibold text-sm peer-checked:bg-red-500 peer-checked:border-red-500 peer-checked:text-white transition-all duration-200 font-semibold tracking-wide uppercase">
+                                                Absent
+                                            </div>
+                                        </label>
+                                    </div>
+                                </div>
+
+                                <div class="space-y-2" x-show="editAttendance.status === 'present'">
+                                    <label class="text-sm font-medium text-slate-700 dark:text-slate-300 block">Best Student Rank</label>
+                                    <select name="daily_rank" x-model="editAttendance.daily_rank" class="bg-slate-50 border border-slate-300 text-slate-900 text-sm rounded-lg focus:ring-amber-500 focus:border-amber-500 block w-full p-2.5 dark:bg-slate-700 dark:border-slate-600 dark:placeholder-slate-400 dark:text-white dark:focus:ring-amber-500 dark:focus:border-amber-500">
+                                        <option value="">None</option>
+                                        <option value="1">1st Place 🏆</option>
+                                        <option value="2">2nd Place 🥈</option>
+                                        <option value="3">3rd Place 🥉</option>
+                                    </select>
+                                </div>
+
+                                <div class="space-y-2" x-show="editAttendance.status === 'absent'">
+                                    <label class="text-sm font-medium text-slate-700 dark:text-slate-300 block">Reason / Note for Absence</label>
+                                    <input type="text" name="remarks" x-model="editAttendance.remarks" placeholder="Enter reason (e.g., Sick, Travel)..." class="bg-slate-50 border border-slate-300 text-slate-900 text-sm rounded-lg focus:ring-rose-500 focus:border-rose-500 block w-full p-2.5 dark:bg-slate-700 dark:border-slate-600 dark:placeholder-slate-400 dark:text-white dark:focus:ring-rose-500 dark:focus:border-rose-500">
+                                </div>
+                            </div>
+
+                            <div class="p-6 border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50 flex justify-end gap-3 rounded-b-2xl">
+                                <button type="button" @click="editAttendance = null" class="btn bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700">Cancel</button>
+                                <button type="submit" class="btn btn-primary px-8">Save Changes</button>
                             </div>
                         </form>
                     </div>
@@ -1131,15 +1233,29 @@
                                         </span>
                                     @endif
                                 </div>
-                                <div class="flex items-center gap-3 mt-1 text-sm text-slate-500">
+                                <div class="flex flex-wrap items-center gap-x-3 gap-y-1.5 mt-1 text-sm text-slate-500">
                                     <div class="flex items-center gap-1.5">
-                                        <svg class="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                                        <svg class="size-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
                                         {{ $attendance->attendance_date->format('l, M j, Y') }}
                                     </div>
+                                    @if($attendance->student?->phone)
+                                        <div class="flex items-center gap-1 text-slate-500 dark:text-slate-400">
+                                            <svg class="size-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" /></svg>
+                                            <span>{{ $attendance->student->phone }}</span>
+                                        </div>
+                                    @endif
                                     @if($attendance->student?->batch)
                                         <span class="px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-xs font-medium">{{ $attendance->student->batch->name }}</span>
                                     @endif
                                 </div>
+                                @if($attendance->remarks)
+                                    <div class="mt-2 flex">
+                                        <span class="inline-flex items-center gap-1.5 text-xs font-semibold text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-500/10 px-2.5 py-1 rounded-md border border-rose-100 dark:border-rose-950/30 shadow-sm">
+                                            <svg class="size-4 shrink-0 text-rose-500 dark:text-rose-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
+                                            Absent Note: {{ $attendance->remarks }}
+                                        </span>
+                                    </div>
+                                @endif
                             </div>
                         </div>
 
@@ -1157,9 +1273,27 @@
                                 </div>
                             </div>
 
-                            <span class="px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider {{ $attendance->status === 'present' ? 'bg-green-100 text-green-700 dark:bg-green-500/10 dark:text-green-400' : ($attendance->status === 'absent' ? 'bg-red-100 text-red-700 dark:bg-red-500/10 dark:text-red-400' : 'bg-yellow-100 text-yellow-700 dark:bg-yellow-500/10 dark:text-yellow-400') }}">
-                                {{ $attendance->status }}
-                            </span>
+                            <div class="flex items-center gap-3">
+                                <span class="px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider {{ $attendance->status === 'present' ? 'bg-green-100 text-green-700 dark:bg-green-500/10 dark:text-green-400' : ($attendance->status === 'absent' ? 'bg-red-100 text-red-700 dark:bg-red-500/10 dark:text-red-400' : 'bg-yellow-100 text-yellow-700 dark:bg-yellow-500/10 dark:text-yellow-400') }}">
+                                    {{ $attendance->status }}
+                                </span>
+                                
+                                <button type="button" @click="editAttendance = {
+                                    id: {{ $attendance->id }},
+                                    attendance_date: '{{ $attendance->attendance_date->toDateString() }}',
+                                    status: '{{ $attendance->status }}',
+                                    daily_rank: '{{ $attendance->daily_rank ?? '' }}',
+                                    remarks: '{{ addslashes($attendance->remarks ?? '') }}',
+                                    student: {
+                                        name: '{{ addslashes($attendance->student?->name ?? 'N/A') }}',
+                                        batch: {
+                                            name: '{{ $attendance->student?->batch?->name ?? '' }}'
+                                        }
+                                    }
+                                }" class="p-1.5 text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-950/30 rounded-lg transition-all" title="Edit Status/Note">
+                                    <svg class="size-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+                                </button>
+                            </div>
                         </div>
                     </article>
                 @empty
@@ -1466,11 +1600,11 @@
                         <div class="flex items-center w-full sm:w-auto pl-3 pr-2 py-2 sm:py-0 border-t sm:border-t-0 border-slate-200 dark:border-slate-800">
                             <select name="marketing_status" class="bg-transparent border-0 text-sm font-medium text-slate-600 dark:text-slate-300 focus:ring-0 outline-none cursor-pointer hover:text-slate-900 dark:hover:text-white transition w-full sm:w-auto [&>option]:dark:bg-slate-900" onchange="this.form.submit()">
                                 <option value="">All Statuses</option>
-                                <option value="new" === 'new')>New</option>
-                                <option value="contacting" === 'contacting')>Contacting</option>
-                                <option value="interested" === 'interested')>Interested</option>
-                                <option value="admitted" === 'admitted')>Admitted</option>
-                                <option value="not interested" === 'not interested')>Not Interested</option>
+                                <option value="new" {{ request('marketing_status') === 'new' ? 'selected' : '' }}>New</option>
+                                <option value="contacting" {{ request('marketing_status') === 'contacting' ? 'selected' : '' }}>Contacting</option>
+                                <option value="interested" {{ request('marketing_status') === 'interested' ? 'selected' : '' }}>Interested</option>
+                                <option value="admitted" {{ request('marketing_status') === 'admitted' ? 'selected' : '' }}>Admitted</option>
+                                <option value="not interested" {{ request('marketing_status') === 'not interested' ? 'selected' : '' }}>Not Interested</option>
                             </select>
                             
                             <div class="h-6 w-px bg-slate-200 dark:bg-slate-700 hidden sm:block mx-1"></div>
@@ -1478,12 +1612,12 @@
                             <select name="marketing_source" class="bg-transparent border-0 text-sm font-medium text-slate-600 dark:text-slate-300 focus:ring-0 outline-none cursor-pointer hover:text-slate-900 dark:hover:text-white transition w-full sm:w-auto mt-2 sm:mt-0 [&>option]:dark:bg-slate-900" onchange="this.form.submit()">
                                 <option value="">All Schools</option>
                                 @foreach($marketingSources ?? [] as $source)
-                                    <option value="{{ $source }}" === $source)>{{ $source }}</option>
+                                    <option value="{{ $source }}" {{ request('marketing_source') === $source ? 'selected' : '' }}>{{ $source }}</option>
                                 @endforeach
                             </select>
                             
                             <button type="submit" class="hidden sm:inline-flex ml-2 items-center justify-center rounded-lg bg-teal-600 p-2 text-white hover:bg-teal-700 transition shadow-sm shadow-teal-900/10">
-                                <svg class="size-4.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                                <svg class="size-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
                             </button>
                         </div>
                     </form>

@@ -29,7 +29,7 @@ class ServiceController extends Controller
             return view('services.computer-training', [
                 'attendanceRecords' => ComputerTrainingAttendance::with([
                     'student' => function ($query) {
-                        $query->withCount([
+                        $query->with(['batch'])->withCount([
                             'attendances as present_count' => fn ($q) => $q->where('status', 'present'),
                             'attendances as absent_count' => fn ($q) => $q->where('status', 'absent')
                         ]);

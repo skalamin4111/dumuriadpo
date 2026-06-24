@@ -192,7 +192,7 @@ class ComputerTrainingController extends Controller
 
                 $student = $matchQuery->first();
 
-                $session = date('Y') . '-1';
+                $session = date('Y') . '-2';
 
                 $seatNumber = null;
                 if (is_numeric($sheetSerial) && $sheetSerial > 0) {
@@ -741,11 +741,16 @@ class ComputerTrainingController extends Controller
             'attendances.*.student_id' => ['required', 'exists:computer_training_students,id'],
             'attendances.*.status' => ['required', \Illuminate\Validation\Rule::in(['present', 'absent', 'late'])],
             'attendances.*.daily_rank' => ['nullable', 'integer', 'in:1,2,3'],
+            'attendances.*.remarks' => ['nullable', 'string', 'max:255'],
         ]);
 
         $companyId = $request->user() ? $request->user()->company_id : 1;
 
         foreach ($data['attendances'] as $att) {
+            $status = $att['status'];
+            $dailyRank = $status === 'present' ? ($att['daily_rank'] ?? null) : null;
+            $remarks = $status === 'absent' ? ($att['remarks'] ?? null) : null;
+
             \App\Models\ComputerTrainingAttendance::updateOrCreate(
                 [
                     'company_id' => $companyId,
@@ -753,13 +758,37 @@ class ComputerTrainingController extends Controller
                     'attendance_date' => $data['attendance_date']
                 ],
                 [
-                    'status' => $att['status'],
-                    'daily_rank' => $att['daily_rank'] ?? null,
+                    'status' => $status,
+                    'daily_rank' => $dailyRank,
+                    'remarks' => $remarks,
                 ]
             );
         }
 
         return back()->with('status', 'Bulk attendance recorded successfully.')->with('tab', 'attendance');
+    }
+
+    public function updateAttendance(Request $request, \App\Models\ComputerTrainingAttendance $attendance): RedirectResponse
+    {
+        if ($request->user() && $attendance->company_id !== $request->user()->company_id) {
+            abort(403);
+        }
+
+        $data = $request->validate([
+            'status' => ['required', \Illuminate\Validation\Rule::in(['present', 'absent', 'late'])],
+            'daily_rank' => ['nullable', 'integer', 'in:1,2,3'],
+            'remarks' => ['nullable', 'string', 'max:255'],
+        ]);
+
+        if ($data['status'] === 'present') {
+            $data['remarks'] = null;
+        } else {
+            $data['daily_rank'] = null;
+        }
+
+        $attendance->update($data);
+
+        return back()->with('status', 'Attendance record updated successfully.')->with('tab', 'attendance');
     }
 }
 
