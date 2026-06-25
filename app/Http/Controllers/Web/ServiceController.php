@@ -25,6 +25,7 @@ class ServiceController extends Controller
 
         if ($service === 'computer-training') {
             $perPage = request()->integer('per_page', 10);
+            $attendanceCourse = request()->has('attendance_course') ? request('attendance_course') : 'Diploma in Software Application';
 
             return view('services.computer-training', [
                 'attendanceRecords' => ComputerTrainingAttendance::with([
@@ -37,9 +38,9 @@ class ServiceController extends Controller
                     'classSchedule'
                 ])
                 ->when(request('attendance_date'), fn($q, $v) => $q->whereDate('attendance_date', $v))
-                ->when(request('attendance_course') || request('attendance_batch') || request('attendance_search'), function($q) {
-                    $q->whereHas('student', function($q2) {
-                        $q2->when(request('attendance_course'), fn($q3, $v) => $q3->where('course', $v))
+                ->when($attendanceCourse || request('attendance_batch') || request('attendance_search'), function($q) use ($attendanceCourse) {
+                    $q->whereHas('student', function($q2) use ($attendanceCourse) {
+                        $q2->when($attendanceCourse, fn($q3, $v) => $q3->where('course', $v))
                            ->when(request('attendance_batch'), fn($q3, $v) => $q3->where('batch_id', $v))
                            ->when(request('attendance_search'), function($q3, $v) {
                                $q3->where(function($q4) use ($v) {

@@ -926,7 +926,7 @@
 
                 <section x-show="tab === 'attendance'" class="grid gap-5" x-data="{ 
             showBulkModal: false, 
-            selectedCourse: '', 
+            selectedCourse: 'Diploma in Software Application', 
             selectedBatchId: '', 
             attendanceDate: '<?php echo e(now()->toDateString()); ?>',
             students: [], 
@@ -958,7 +958,7 @@
             
             <div class="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-4">
                 <h2 class="text-lg font-bold text-slate-800 dark:text-slate-200">Daily Attendance History</h2>
-                <button type="button" @click="showBulkModal = true; selectedCourse = ''; selectedBatchId = ''; students = [];" class="btn btn-primary px-5 py-2.5">
+                <button type="button" @click="showBulkModal = true; selectedCourse = 'Diploma in Software Application'; selectedBatchId = ''; students = [];" class="btn btn-primary px-5 py-2.5">
                     <svg class="size-5 mr-2 inline-block" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                     Check Attendance
                 </button>
@@ -1204,7 +1204,7 @@
                     <select name="attendance_course" class="flex-1 py-2 pl-3 pr-8 text-sm bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 outline-none transition-all dark:text-slate-200 shadow-sm appearance-none" style="background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%2394a3b8%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E'); background-repeat: no-repeat, repeat; background-position: right .7em top 50%, 0 0; background-size: .65em auto, 100%;">
                         <option value="">All Courses</option>
                         <?php $__currentLoopData = $courses; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $c): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
-                            <option value="<?php echo e($c); ?>" <?php echo e(request('attendance_course') == $c ? 'selected' : ''); ?>><?php echo e($c); ?></option>
+                            <option value="<?php echo e($c); ?>" <?php echo e((request()->has('attendance_course') ? request('attendance_course') : 'Diploma in Software Application') == $c ? 'selected' : ''); ?>><?php echo e($c); ?></option>
                         <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
                     </select>
 

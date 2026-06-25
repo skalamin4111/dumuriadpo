@@ -13,7 +13,7 @@ $courses = [
     'Web Development',
     'Freelancing',
     'Digital Marketing',
-    'Diploma in software application',
+    'Diploma in Software Application',
 ];
 
 // Assuming company_id = 1 for demo purposes as used previously, or loop through all companies
