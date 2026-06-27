@@ -32,7 +32,11 @@ class ServiceController extends Controller
                     'student' => function ($query) {
                         $query->with(['batch'])->withCount([
                             'attendances as present_count' => fn ($q) => $q->where('status', 'present'),
-                            'attendances as absent_count' => fn ($q) => $q->where('status', 'absent')
+                            'attendances as absent_count' => fn ($q) => $q->where('status', 'absent'),
+                            'attendances as late_count' => fn ($q) => $q->where('status', 'late'),
+                            'attendances as rank_1_count' => fn ($q) => $q->where('daily_rank', 1),
+                            'attendances as rank_2_count' => fn ($q) => $q->where('daily_rank', 2),
+                            'attendances as rank_3_count' => fn ($q) => $q->where('daily_rank', 3),
                         ]);
                     }, 
                     'classSchedule'

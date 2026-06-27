@@ -12,6 +12,31 @@ class ComputerTrainingStudent extends Model
     use BelongsToCompany;
     use SoftDeletes;
 
+    protected $appends = ['total_marks'];
+
+    public function getTotalMarksAttribute(): int
+    {
+        if (array_key_exists('present_count', $this->attributes)) {
+            $p = $this->present_count;
+            $a = $this->absent_count;
+            $l = $this->late_count;
+            $r1 = $this->rank_1_count;
+            $r2 = $this->rank_2_count;
+            $r3 = $this->rank_3_count;
+        } else {
+            $p = $this->attendances()->where('status', 'present')->count();
+            $a = $this->attendances()->where('status', 'absent')->count();
+            $l = $this->attendances()->where('status', 'late')->count();
+            $r1 = $this->attendances()->where('daily_rank', 1)->count();
+            $r2 = $this->attendances()->where('daily_rank', 2)->count();
+            $r3 = $this->attendances()->where('daily_rank', 3)->count();
+        }
+
+        $standardPresent = max(0, $p - $r1 - $r2 - $r3);
+
+        return ($standardPresent * 5) + ($r1 * 10) + ($r2 * 5) + ($r3 * 3) + ($l * 5) - ($a * 2);
+    }
+
     protected $fillable = [
         'company_id',
         'batch_id',

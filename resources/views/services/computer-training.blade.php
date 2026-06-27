@@ -915,6 +915,7 @@
             students: [], 
             loading: false,
             editAttendance: null,
+            viewStudentAttendance: null,
             
             fetchStudents() {
                 if(!this.selectedBatchId) {
@@ -1171,6 +1172,146 @@
                 </div>
             </template>
 
+            <!-- Student Attendance Detail Modal -->
+            <template x-teleport="body">
+                <div x-show="viewStudentAttendance !== null" 
+                     class="fixed inset-0 z-[100] overflow-y-auto bg-slate-950/60 backdrop-blur-sm flex items-start justify-center p-4 sm:p-6 md:py-12" 
+                     style="display:none"
+                     x-transition.opacity>
+                    
+                    <div class="w-full max-w-2xl bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 relative flex flex-col" @click.self="viewStudentAttendance = null">
+                        
+                        <div class="p-6 border-b border-slate-200 dark:border-slate-800 flex justify-between items-center bg-slate-50 dark:bg-slate-800/50 rounded-t-2xl shrink-0">
+                            <div class="flex items-center gap-3">
+                                <div class="p-2 bg-teal-500/10 text-teal-600 dark:text-teal-400 rounded-xl">
+                                    <svg class="size-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                                </div>
+                                <div>
+                                    <h2 class="font-bold text-lg sm:text-xl text-slate-800 dark:text-slate-200">Attendance & Marks Summary</h2>
+                                    <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5" x-text="viewStudentAttendance?.attendance_date_formatted || ''"></p>
+                                </div>
+                            </div>
+                            <button type="button" @click="viewStudentAttendance = null" class="text-slate-400 hover:text-slate-600 transition bg-white dark:bg-slate-800 rounded-full p-2 shadow-sm border border-slate-200 dark:border-slate-700">
+                                <svg class="size-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                            </button>
+                        </div>
+
+                        <div class="p-6 space-y-6 overflow-y-auto max-h-[calc(100vh-16rem)] text-slate-800 dark:text-slate-200">
+                            <!-- Student Profile Card -->
+                            <div class="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-100 dark:border-slate-800/60 flex flex-col sm:flex-row justify-between gap-4">
+                                <div class="space-y-1.5">
+                                    <span class="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Student Details</span>
+                                    <h3 class="text-lg font-bold text-slate-800 dark:text-slate-200" x-text="viewStudentAttendance?.student?.name"></h3>
+                                    <div class="flex flex-wrap gap-x-4 gap-y-1 text-sm text-slate-500 dark:text-slate-400">
+                                        <span class="flex items-center gap-1"><span class="font-medium text-slate-400">ID:</span> <span x-text="viewStudentAttendance?.student?.student_id"></span></span>
+                                        <span class="flex items-center gap-1"><span class="font-medium text-slate-400">Phone:</span> <span x-text="viewStudentAttendance?.student?.phone"></span></span>
+                                    </div>
+                                </div>
+                                <div class="text-left sm:text-right space-y-1.5 shrink-0">
+                                    <span class="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider font-semibold">Course & Batch</span>
+                                    <p class="text-sm font-bold text-teal-600 dark:text-teal-400" x-text="viewStudentAttendance?.student?.course"></p>
+                                    <p class="text-xs text-slate-500 dark:text-slate-400 font-medium mt-1"><span class="px-2.5 py-1 rounded bg-slate-200 dark:bg-slate-800 font-semibold" x-text="viewStudentAttendance?.student?.batch?.name"></span></p>
+                                </div>
+                            </div>
+
+                            <!-- Metrics Grid -->
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <!-- Today's Update -->
+                                <div class="p-5 rounded-xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900/40 shadow-sm flex flex-col justify-between">
+                                    <div>
+                                        <span class="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider block mb-2">Today's Attendance & Mark</span>
+                                        <div class="flex items-center gap-3">
+                                            <span class="px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider" 
+                                                  :class="viewStudentAttendance?.status === 'present' ? 'bg-green-100 text-green-700 dark:bg-green-500/10 dark:text-green-400' : (viewStudentAttendance?.status === 'absent' ? 'bg-red-100 text-red-700 dark:bg-red-500/10 dark:text-red-400' : 'bg-yellow-100 text-yellow-700 dark:bg-yellow-500/10 dark:text-yellow-400')"
+                                                  x-text="viewStudentAttendance?.status"></span>
+                                            
+                                            <template x-if="viewStudentAttendance?.daily_rank">
+                                                <span class="inline-flex items-center gap-0.5 text-xs font-bold bg-amber-100 text-amber-700 dark:bg-amber-500/10 dark:text-amber-400 px-2 py-0.5 rounded-full">
+                                                    🏆 Rank <span x-text="viewStudentAttendance?.daily_rank"></span>
+                                                </span>
+                                            </template>
+                                        </div>
+                                    </div>
+                                    <div class="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800/80 flex justify-between items-baseline">
+                                        <span class="text-sm text-slate-500 dark:text-slate-400">Mark change:</span>
+                                        <span class="text-xl font-bold" 
+                                              :class="viewStudentAttendance?.today_mark > 0 ? 'text-green-600 dark:text-green-400' : (viewStudentAttendance?.today_mark < 0 ? 'text-red-600 dark:text-red-400' : 'text-slate-500')"
+                                              x-text="(viewStudentAttendance?.today_mark > 0 ? '+' : '') + viewStudentAttendance?.today_mark + ' Marks'"></span>
+                                    </div>
+                                </div>
+
+                                <!-- Cumulative Total Marks -->
+                                <div class="p-5 rounded-xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900/40 shadow-sm flex flex-col justify-between">
+                                    <div>
+                                        <span class="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider block mb-2 block">Total Accumulated Marks</span>
+                                        <div class="flex items-center gap-2">
+                                            <div class="p-1.5 bg-amber-500/10 text-amber-600 dark:text-amber-400 rounded-lg">
+                                                <svg class="size-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                                            </div>
+                                            <span class="text-xs text-slate-500 dark:text-slate-400 font-medium">All-time score</span>
+                                        </div>
+                                    </div>
+                                    <div class="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800/80 flex justify-between items-baseline">
+                                        <span class="text-sm text-slate-500 dark:text-slate-400">Total Marks:</span>
+                                        <span class="text-2xl font-black text-indigo-600 dark:text-indigo-400 font-black" x-text="(viewStudentAttendance?.student?.total_marks ?? 0) + ' pts'"></span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Attendance Performance -->
+                            <div class="p-5 rounded-xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900/40 shadow-sm space-y-4">
+                                <span class="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider block">Attendance Statistics</span>
+                                
+                                <div class="grid grid-cols-3 gap-2 text-center">
+                                    <div class="p-3 bg-green-50 dark:bg-green-500/5 rounded-lg border border-green-100/50 dark:border-green-950/20">
+                                        <p class="text-xs text-slate-400 dark:text-slate-500 uppercase font-semibold">Attended</p>
+                                        <p class="text-lg font-bold text-green-600 dark:text-green-400 mt-1 font-bold" x-text="viewStudentAttendance?.student?.present_count ?? 0"></p>
+                                    </div>
+                                    <div class="p-3 bg-red-50 dark:bg-red-500/5 rounded-lg border border-red-100/50 dark:border-red-950/20">
+                                        <p class="text-xs text-slate-400 dark:text-slate-500 uppercase font-semibold">Absent</p>
+                                        <p class="text-lg font-bold text-red-600 dark:text-red-400 mt-1 font-bold" x-text="viewStudentAttendance?.student?.absent_count ?? 0"></p>
+                                    </div>
+                                    <div class="p-3 bg-yellow-50 dark:bg-yellow-500/5 rounded-lg border border-yellow-100/50 dark:border-yellow-950/20">
+                                        <p class="text-xs text-slate-400 dark:text-slate-500 uppercase font-semibold">Late</p>
+                                        <p class="text-lg font-bold text-yellow-600 dark:text-yellow-400 mt-1 font-bold" x-text="viewStudentAttendance?.student?.late_count ?? 0"></p>
+                                    </div>
+                                </div>
+
+                                <div class="space-y-1.5" x-data="{
+                                    get rate() {
+                                        if (!viewStudentAttendance) return 0;
+                                        const p = viewStudentAttendance.student.present_count || 0;
+                                        const l = viewStudentAttendance.student.late_count || 0;
+                                        const a = viewStudentAttendance.student.absent_count || 0;
+                                        const total = p + l + a;
+                                        if (total === 0) return 0;
+                                        return Math.round(((p + l) / total) * 100);
+                                    }
+                                }">
+                                    <div class="flex justify-between text-xs font-bold text-slate-600 dark:text-slate-400">
+                                        <span>Attendance Rate (Present + Late)</span>
+                                        <span x-text="rate + '%'"></span>
+                                    </div>
+                                    <div class="w-full bg-slate-100 dark:bg-slate-800 rounded-full h-2">
+                                        <div class="bg-teal-500 h-2 rounded-full transition-all duration-500" :style="`width: ${rate}%`"></div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Remarks/Notes -->
+                            <div class="space-y-2" x-show="viewStudentAttendance?.remarks">
+                                <span class="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider block">Absence Note</span>
+                                <p class="text-sm text-slate-700 dark:text-slate-300 p-3 bg-rose-50 dark:bg-rose-950/20 rounded-xl border border-rose-100 dark:border-rose-900/30 font-semibold" x-text="viewStudentAttendance?.remarks"></p>
+                            </div>
+                        </div>
+
+                        <div class="p-6 border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50 flex justify-end gap-3 rounded-b-2xl shrink-0">
+                            <button type="button" @click="viewStudentAttendance = null" class="btn bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 px-6">Close</button>
+                        </div>
+                    </div>
+                </div>
+            </template>
+
             <form method="GET" action="{{ url()->current() }}" class="flex flex-col lg:flex-row lg:items-center gap-3 bg-slate-50 dark:bg-slate-900/50 p-3 rounded-xl border border-slate-100 dark:border-slate-800/60 mb-6">
                 <input type="hidden" name="tab" value="attendance">
                 
@@ -1213,7 +1354,29 @@
 
             <div class="flex flex-col gap-3">
                 @forelse ($attendanceRecords as $attendance)
-                    <article class="surface p-4 hover:shadow-md transition-shadow relative overflow-hidden flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <article class="surface p-4 hover:shadow-md transition-shadow relative overflow-hidden flex flex-col sm:flex-row sm:items-center justify-between gap-4 cursor-pointer"
+                             @click="viewStudentAttendance = {
+                                 id: {{ $attendance->id }},
+                                 attendance_date: '{{ $attendance->attendance_date->toDateString() }}',
+                                 attendance_date_formatted: '{{ $attendance->attendance_date->format('l, M j, Y') }}',
+                                 status: '{{ $attendance->status }}',
+                                 daily_rank: '{{ $attendance->daily_rank ?? '' }}',
+                                 today_mark: {{ $attendance->today_mark ?? 0 }},
+                                 remarks: '{{ addslashes($attendance->remarks ?? '') }}',
+                                 student: {
+                                     name: '{{ addslashes($attendance->student?->name ?? 'N/A') }}',
+                                     student_id: '{{ $attendance->student?->student_id ?? 'N/A' }}',
+                                     phone: '{{ $attendance->student?->phone ?? 'N/A' }}',
+                                     course: '{{ addslashes($attendance->student?->course ?? 'N/A') }}',
+                                     present_count: {{ $attendance->student?->present_count ?? 0 }},
+                                     absent_count: {{ $attendance->student?->absent_count ?? 0 }},
+                                     late_count: {{ $attendance->student?->late_count ?? 0 }},
+                                     total_marks: {{ $attendance->student?->total_marks ?? 0 }},
+                                     batch: {
+                                         name: '{{ $attendance->student?->batch?->name ?? 'Unassigned' }}'
+                                     }
+                                 }
+                             }">
                         @if($attendance->daily_rank)
                             <div class="absolute -right-6 top-4 bg-amber-500 text-white text-[10px] font-bold px-8 py-0.5 rotate-45 shadow-sm sm:hidden">
                                 {{ $attendance->daily_rank }}{{ $attendance->daily_rank == 1 ? 'st' : ($attendance->daily_rank == 2 ? 'nd' : 'rd') }}
@@ -1278,7 +1441,7 @@
                                     {{ $attendance->status }}
                                 </span>
                                 
-                                <button type="button" @click="editAttendance = {
+                                <button type="button" @click.stop="editAttendance = {
                                     id: {{ $attendance->id }},
                                     attendance_date: '{{ $attendance->attendance_date->toDateString() }}',
                                     status: '{{ $attendance->status }}',
@@ -1399,9 +1562,24 @@
             feeCourse: '', 
             feeBatch: '', 
             feeStudent: '',
-            totalAmount: '',
-            paidAmount: '',
-            feeType: ''
+            totalAmount: '3000', 
+            paidAmount: '1000',
+            feeType: 'Admission',
+            status: 'partial',
+            dueDate: '{{ now()->addMonth()->toDateString() }}',
+            paidAtDate: '{{ now()->toDateString() }}',
+            
+            updateStatus() {
+                let total = parseFloat(this.totalAmount) || 0;
+                let paid = parseFloat(this.paidAmount) || 0;
+                if (paid === 0) {
+                    this.status = 'due';
+                } else if (paid < total) {
+                    this.status = 'partial';
+                } else {
+                    this.status = 'paid';
+                }
+            }
         }">
             <form method="POST" action="{{ route('computer-training.fees.store') }}" class="surface p-5">
                 @csrf
@@ -1438,8 +1616,8 @@
                     </select>
 
                     <div class="grid grid-cols-2 gap-3">
-                        <input class="field" name="amount" type="number" step="0.01" min="0" placeholder="Total amount" x-model="totalAmount" required>
-                        <input class="field" name="paid_amount" type="number" step="0.01" min="0" placeholder="Paid amount" x-model="paidAmount">
+                        <input class="field" name="amount" type="number" step="0.01" min="0" placeholder="Total amount" x-model="totalAmount" @input="updateStatus()" required>
+                        <input class="field" name="paid_amount" type="number" step="0.01" min="0" placeholder="Paid amount" x-model="paidAmount" @input="updateStatus()">
                     </div>
                     
                     <div class="text-sm font-medium text-slate-700 dark:text-slate-300 py-1">
@@ -1447,11 +1625,11 @@
                     </div>
 
                     <div class="grid grid-cols-2 gap-3">
-                        <input class="field" name="due_date" type="date" required title="Due Date">
-                        <input class="field" name="paid_at" type="date" title="Paid At">
+                        <input class="field" name="due_date" type="date" x-model="dueDate" required title="Due Date">
+                        <input class="field" name="paid_at" type="date" x-model="paidAtDate" title="Paid At">
                     </div>
                     
-                    <select class="field" name="status">
+                    <select class="field" name="status" x-model="status">
                         <option value="due">Due</option>
                         <option value="partial">Partial</option>
                         <option value="paid">Paid</option>

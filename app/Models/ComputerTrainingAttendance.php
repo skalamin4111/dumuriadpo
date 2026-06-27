@@ -10,12 +10,38 @@ class ComputerTrainingAttendance extends Model
 {
     use BelongsToCompany;
 
+    protected $appends = ['today_mark'];
+
+    public function getTodayMarkAttribute(): int
+    {
+        if ($this->status === 'absent') {
+            return -2;
+        }
+        if ($this->status === 'late') {
+            return 5;
+        }
+        if ($this->status === 'present') {
+            if ($this->daily_rank == 1) {
+                return 10;
+            }
+            if ($this->daily_rank == 2) {
+                return 5;
+            }
+            if ($this->daily_rank == 3) {
+                return 3;
+            }
+            return 5;
+        }
+        return 0;
+    }
+
     protected $fillable = [
         'company_id',
         'student_id',
         'class_schedule_id',
         'attendance_date',
         'status',
+        'daily_rank',
         'remarks',
     ];
 
