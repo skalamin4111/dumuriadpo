@@ -14,6 +14,20 @@ class ComputerTrainingStudent extends Model
 
     protected $appends = ['total_marks'];
 
+    protected static function booted()
+    {
+        static::created(function ($student) {
+            $student->fees()->create([
+                'company_id' => $student->company_id,
+                'fee_type' => 'Admission Fee',
+                'amount' => 3000,
+                'paid_amount' => 1000,
+                'due_date' => $student->admission_date ?? now(),
+                'status' => 'partial',
+            ]);
+        });
+    }
+
     public function getTotalMarksAttribute(): int
     {
         if (array_key_exists('present_count', $this->attributes)) {

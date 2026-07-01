@@ -1253,7 +1253,7 @@
                                     </div>
                                     <div class="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800/80 flex justify-between items-baseline">
                                         <span class="text-sm text-slate-500 dark:text-slate-400">Total Marks:</span>
-                                        <span class="text-2xl font-black text-indigo-600 dark:text-indigo-400 font-black" x-text="(viewStudentAttendance?.student?.total_marks ?? 0) + ' pts'"></span>
+                                        <span class="text-2xl font-black text-indigo-600 dark:text-indigo-400 font-black" x-text="(viewStudentAttendance?.student?.total_marks ?? 0) + ' Marks'"></span>
                                     </div>
                                 </div>
                             </div>

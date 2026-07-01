@@ -87,7 +87,7 @@ class ServiceController extends Controller
                     })
                     ->when(request('student_batch'), fn($q, $v) => $q->where('batch_id', $v))
                     ->when(request('student_status'), fn($q, $v) => $q->where('status', $v))
-                    ->latest()->paginate($perPage, ['*'], 'student_page')->withQueryString(),
+                    ->orderBy('student_id')->paginate($perPage, ['*'], 'student_page')->withQueryString(),
                 'batches' => \App\Models\ComputerTrainingBatch::with(['students'])->withCount('students')->orderBy('type')->orderByRaw('LENGTH(name)')->orderBy('name')->get(),
             ]);
         }
