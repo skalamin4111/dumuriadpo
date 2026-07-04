@@ -44,6 +44,10 @@ class AppServiceProvider extends ServiceProvider
             \Illuminate\Support\Facades\URL::forceScheme('https');
         }
 
+        if (!app()->environment('local')) {
+            \Illuminate\Support\Facades\Vite::useHotFile(storage_path('vite.hot'));
+        }
+
         Gate::policy(Employee::class, EmployeePolicy::class);
         Gate::policy(Customer::class, CustomerPolicy::class);
         Gate::policy(Task::class, TaskPolicy::class);
