@@ -1078,11 +1078,6 @@
                                                                         P: <strong class="text-slate-700 dark:text-slate-300" x-text="s.present_count"></strong> / 
                                                                         A: <strong class="text-slate-700 dark:text-slate-300" x-text="s.absent_count"></strong>
                                                                     </span>
-                                                                    <span class="text-slate-300 dark:text-slate-700">|</span>
-                                                                    <!-- Total Marks -->
-                                                                    <span class="inline-flex items-center px-1.5 py-0.5 rounded bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 font-semibold text-[10px]">
-                                                                        <span x-text="s.total_marks"></span> Marks
-                                                                    </span>
                                                                 </div>
                                                             </div>
                                                         </div>
