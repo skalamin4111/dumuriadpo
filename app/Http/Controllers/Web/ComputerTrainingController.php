@@ -725,8 +725,36 @@ class ComputerTrainingController extends Controller
             abort(403);
         }
 
-        $students = $batch->students()->orderBy('seat_number')->get(['id', 'name', 'seat_number', 'phone', 'status']);
-        
+        $date = $request->input('date', now()->toDateString());
+
+        // Fetch students with pre-aggregated counts for performance and marks calculation
+        $students = $batch->students()
+            ->withCount([
+                'attendances as present_count' => fn ($q) => $q->where('status', 'present'),
+                'attendances as absent_count' => fn ($q) => $q->where('status', 'absent'),
+                'attendances as late_count' => fn ($q) => $q->where('status', 'late'),
+                'attendances as rank_1_count' => fn ($q) => $q->where('daily_rank', 1),
+                'attendances as rank_2_count' => fn ($q) => $q->where('daily_rank', 2),
+                'attendances as rank_3_count' => fn ($q) => $q->where('daily_rank', 3),
+            ])
+            ->orderBy('student_id')
+            ->get();
+
+        $studentIds = $students->pluck('id')->toArray();
+
+        // Query the most recent attendance record before the selected date for each student
+        $prevStatuses = \App\Models\ComputerTrainingAttendance::whereIn('student_id', $studentIds)
+            ->where('attendance_date', '<', $date)
+            ->orderBy('attendance_date', 'desc')
+            ->get()
+            ->groupBy('student_id')
+            ->map(fn ($group) => $group->first()->status);
+
+        // Attach previous status as model attributes so they serialize correctly
+        foreach ($students as $student) {
+            $student->setAttribute('prev_status', $prevStatuses->get($student->id, null));
+        }
+
         return response()->json([
             'students' => $students
         ]);

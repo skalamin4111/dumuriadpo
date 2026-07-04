@@ -2205,3 +2205,31 @@ into your web browser: <span class="break-all" style="box-sizing: border-box; fo
 </html>
 --mL-CXmQ6--
   
+[2026-07-04 11:51:27] local.ERROR: The command "'/usr/bin/php8.3' 'vendor/phpunit/phpunit/phpunit' '--configuration=/home/sahil/development/office_project/dpoerp/phpunit.xml' '--no-output'" failed.
+
+Working directory: /home/sahil/development/office_project/dpoerp
+
+Error: proc_open(/dev/tty): Failed to open stream: No such device or address {"exception":"[object] (Symfony\\Component\\Process\\Exception\\ProcessStartFailedException(code: 0): The command \"'/usr/bin/php8.3' 'vendor/phpunit/phpunit/phpunit' '--configuration=/home/sahil/development/office_project/dpoerp/phpunit.xml' '--no-output'\" failed.
+
+Working directory: /home/sahil/development/office_project/dpoerp
+
+Error: proc_open(/dev/tty): Failed to open stream: No such device or address at /home/sahil/development/office_project/dpoerp/vendor/symfony/process/Process.php:406)
+[stacktrace]
+#0 /home/sahil/development/office_project/dpoerp/vendor/symfony/process/Process.php(263): Symfony\\Component\\Process\\Process->start()
+#1 /home/sahil/development/office_project/dpoerp/vendor/nunomaduro/collision/src/Adapters/Laravel/Commands/TestCommand.php(121): Symfony\\Component\\Process\\Process->run()
+#2 /home/sahil/development/office_project/dpoerp/vendor/laravel/framework/src/Illuminate/Container/BoundMethod.php(36): NunoMaduro\\Collision\\Adapters\\Laravel\\Commands\\TestCommand->handle()
+#3 /home/sahil/development/office_project/dpoerp/vendor/laravel/framework/src/Illuminate/Container/Util.php(43): Illuminate\\Container\\BoundMethod::Illuminate\\Container\\{closure}()
+#4 /home/sahil/development/office_project/dpoerp/vendor/laravel/framework/src/Illuminate/Container/BoundMethod.php(96): Illuminate\\Container\\Util::unwrapIfClosure()
+#5 /home/sahil/development/office_project/dpoerp/vendor/laravel/framework/src/Illuminate/Container/BoundMethod.php(35): Illuminate\\Container\\BoundMethod::callBoundMethod()
+#6 /home/sahil/development/office_project/dpoerp/vendor/laravel/framework/src/Illuminate/Container/Container.php(799): Illuminate\\Container\\BoundMethod::call()
+#7 /home/sahil/development/office_project/dpoerp/vendor/laravel/framework/src/Illuminate/Console/Command.php(211): Illuminate\\Container\\Container->call()
+#8 /home/sahil/development/office_project/dpoerp/vendor/symfony/console/Command/Command.php(341): Illuminate\\Console\\Command->execute()
+#9 /home/sahil/development/office_project/dpoerp/vendor/laravel/framework/src/Illuminate/Console/Command.php(180): Symfony\\Component\\Console\\Command\\Command->run()
+#10 /home/sahil/development/office_project/dpoerp/vendor/symfony/console/Application.php(1117): Illuminate\\Console\\Command->run()
+#11 /home/sahil/development/office_project/dpoerp/vendor/symfony/console/Application.php(356): Symfony\\Component\\Console\\Application->doRunCommand()
+#12 /home/sahil/development/office_project/dpoerp/vendor/symfony/console/Application.php(195): Symfony\\Component\\Console\\Application->doRun()
+#13 /home/sahil/development/office_project/dpoerp/vendor/laravel/framework/src/Illuminate/Foundation/Console/Kernel.php(198): Symfony\\Component\\Console\\Application->run()
+#14 /home/sahil/development/office_project/dpoerp/vendor/laravel/framework/src/Illuminate/Foundation/Application.php(1235): Illuminate\\Foundation\\Console\\Kernel->handle()
+#15 /home/sahil/development/office_project/dpoerp/artisan(12): Illuminate\\Foundation\\Application->handleCommand()
+#16 {main}
+"} 

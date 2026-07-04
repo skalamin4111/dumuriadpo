@@ -24,6 +24,8 @@ Route::middleware('guest')->group(function () {
     Route::post('/reset-password', [PasswordResetController::class, 'update'])->middleware('throttle:3,1')->name('password.update');
 });
 
+Route::get('/login', fn() => redirect('/'));
+
 Route::middleware(['auth', 'active', 'tenant'])->group(function () {
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
     Route::get('/dashboard', DashboardController::class)->name('dashboard');

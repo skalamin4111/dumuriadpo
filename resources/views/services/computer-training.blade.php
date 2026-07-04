@@ -923,7 +923,7 @@
                     return;
                 }
                 this.loading = true;
-                fetch('{{ url('/services/computer-training/batches') }}/' + this.selectedBatchId + '/students')
+                fetch('{{ url('/services/computer-training/batches') }}/' + this.selectedBatchId + '/students?date=' + this.attendanceDate)
                     .then(res => res.json())
                     .then(data => {
                         this.students = data.students.map(s => ({
@@ -933,7 +933,11 @@
                             phone: s.phone,
                             status: '', // default empty, checker must select
                             daily_rank: '', // default empty
-                            remarks: '' // default empty
+                            remarks: '', // default empty
+                            prev_status: s.prev_status,
+                            present_count: s.present_count || 0,
+                            absent_count: s.absent_count || 0,
+                            total_marks: s.total_marks || 0
                         }));
                         this.loading = false;
                     });
@@ -971,7 +975,7 @@
                                 <div class="flex flex-col sm:flex-row gap-4">
                                     <div class="space-y-1 flex-1">
                                         <label class="text-sm font-medium text-slate-700 dark:text-slate-300">Date</label>
-                                        <input type="date" class="field" name="attendance_date" x-model="attendanceDate" required>
+                                        <input type="date" class="field" name="attendance_date" x-model="attendanceDate" @change="fetchStudents()" required>
                                     </div>
                                     <div class="space-y-1 flex-1">
                                         <label class="text-sm font-medium text-slate-700 dark:text-slate-300">Course</label>
@@ -1029,10 +1033,40 @@
                                                     </td>
                                                     <td class="px-4 py-3">
                                                         <div class="flex items-center gap-3">
-                                                            <div class=" rounded-full bg-indigo-100 dark:bg-indigo-900/50 text-indigo-600 dark:text-indigo-400 flex items-center justify-center font-bold text-xs shrink-0" style="width: 2rem; height: 2rem;" x-text="s.name.charAt(0)"></div>
+                                                            <div class="rounded-full bg-indigo-100 dark:bg-indigo-900/50 text-indigo-600 dark:text-indigo-400 flex items-center justify-center font-bold text-xs shrink-0" style="width: 2.25rem; height: 2.25rem;" x-text="s.name.charAt(0)"></div>
                                                             <div>
                                                                 <span class="font-medium text-slate-800 dark:text-slate-200 block" x-text="s.name"></span>
-                                                                <span class="text-xs text-slate-500 dark:text-slate-400 block" x-text="s.phone || 'No Phone'"></span>
+                                                                <div class="flex flex-wrap items-center gap-2 mt-1 text-xs text-slate-500 dark:text-slate-400">
+                                                                    <span x-text="s.phone || 'No Phone'"></span>
+                                                                    <span class="text-slate-300 dark:text-slate-700">|</span>
+                                                                    <!-- Prev Class Status -->
+                                                                    <template x-if="s.prev_status === 'present'">
+                                                                        <span class="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-green-50 dark:bg-green-500/10 text-green-600 dark:text-green-400 font-medium text-[10px]">
+                                                                            Prev: Present
+                                                                        </span>
+                                                                    </template>
+                                                                    <template x-if="s.prev_status === 'absent'">
+                                                                        <span class="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-rose-50 dark:bg-rose-500/10 text-rose-600 dark:text-rose-400 font-medium text-[10px]">
+                                                                            Prev: Absent
+                                                                        </span>
+                                                                    </template>
+                                                                    <template x-if="!s.prev_status">
+                                                                        <span class="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 font-medium text-[10px]">
+                                                                            Prev: N/A
+                                                                        </span>
+                                                                    </template>
+                                                                    <span class="text-slate-300 dark:text-slate-700">|</span>
+                                                                    <!-- Total Present / Absent -->
+                                                                    <span class="text-[10px]">
+                                                                        P: <strong class="text-slate-700 dark:text-slate-300" x-text="s.present_count"></strong> / 
+                                                                        A: <strong class="text-slate-700 dark:text-slate-300" x-text="s.absent_count"></strong>
+                                                                    </span>
+                                                                    <span class="text-slate-300 dark:text-slate-700">|</span>
+                                                                    <!-- Total Marks -->
+                                                                    <span class="inline-flex items-center px-1.5 py-0.5 rounded bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 font-semibold text-[10px]">
+                                                                        <span x-text="s.total_marks"></span> Marks
+                                                                    </span>
+                                                                </div>
                                                             </div>
                                                         </div>
                                                     </td>
@@ -1312,43 +1346,51 @@
                 </div>
             </template>
 
-            <form method="GET" action="{{ url()->current() }}" class="flex flex-col lg:flex-row lg:items-center gap-3 bg-slate-50 dark:bg-slate-900/50 p-3 rounded-xl border border-slate-100 dark:border-slate-800/60 mb-6">
+            <form method="GET" action="{{ url()->current() }}" class="flex flex-col lg:flex-row lg:items-center gap-3 bg-slate-50 dark:bg-slate-900/50 p-3 rounded-xl border border-slate-100 dark:border-slate-800/60 mb-6 w-full min-w-0 overflow-hidden">
                 <input type="hidden" name="tab" value="attendance">
                 
-                <div class="relative flex-[2]">
+                <div class="relative flex-[2] w-full min-w-0">
                     <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
                         <svg class="size-5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
                     </div>
-                    <input type="text" name="attendance_search" value="{{ request('attendance_search') }}" placeholder="Search name, phone, ID..." class="w-full pl-10 pr-4 py-2 text-sm bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 outline-none transition-all placeholder:text-slate-400 dark:text-slate-200 shadow-sm">
+                    <input type="text" name="attendance_search" value="{{ request('attendance_search') }}" placeholder="Search name, phone, ID..." class="w-full max-w-full pl-10 pr-4 py-2 text-sm bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 outline-none transition-all placeholder:text-slate-400 dark:text-slate-200 shadow-sm">
                 </div>
 
-                <div class="flex flex-wrap items-center gap-3 flex-[3]">
-                    <input type="date" name="attendance_date" value="{{ request('attendance_date') }}" class="flex-1 py-2 px-3 text-sm bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 outline-none transition-all dark:text-slate-200 shadow-sm">
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 w-full lg:flex lg:flex-[3] lg:items-center min-w-0">
+                    <div class="w-full lg:flex-1 min-w-0">
+                        <input type="date" name="attendance_date" value="{{ request('attendance_date') }}" class="w-full max-w-full py-2 px-3 text-sm bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 outline-none transition-all dark:text-slate-200 shadow-sm">
+                    </div>
                     
-                    <select name="attendance_course" class="flex-1 py-2 pl-3 pr-8 text-sm bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 outline-none transition-all dark:text-slate-200 shadow-sm appearance-none" style="background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%2394a3b8%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E'); background-repeat: no-repeat, repeat; background-position: right .7em top 50%, 0 0; background-size: .65em auto, 100%;">
-                        <option value="">All Courses</option>
-                        @foreach($courses as $c)
-                            <option value="{{ $c }}" {{ (request()->has('attendance_course') ? request('attendance_course') : 'Diploma in Software Application') == $c ? 'selected' : '' }}>{{ $c }}</option>
-                        @endforeach
-                    </select>
+                    <div class="w-full lg:flex-1 min-w-0">
+                        <select name="attendance_course" class="w-full max-w-full py-2 pl-3 pr-8 text-sm bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 outline-none transition-all dark:text-slate-200 shadow-sm appearance-none" style="background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%2394a3b8%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E'); background-repeat: no-repeat, repeat; background-position: right .7em top 50%, 0 0; background-size: .65em auto, 100%;">
+                            <option value="">All Courses</option>
+                            @foreach($courses as $c)
+                                <option value="{{ $c }}" {{ (request()->has('attendance_course') ? request('attendance_course') : 'Diploma in Software Application') == $c ? 'selected' : '' }}>{{ $c }}</option>
+                            @endforeach
+                        </select>
+                    </div>
 
-                    <select name="attendance_batch" class="flex-1 py-2 pl-3 pr-8 text-sm bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 outline-none transition-all dark:text-slate-200 shadow-sm appearance-none" style="background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%2394a3b8%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E'); background-repeat: no-repeat, repeat; background-position: right .7em top 50%, 0 0; background-size: .65em auto, 100%;">
-                        <option value="">All Batches</option>
-                        @foreach(\App\Models\ComputerTrainingBatch::orderBy('name')->get() as $b)
-                            <option value="{{ $b->id }}" {{ request('attendance_batch') == $b->id ? 'selected' : '' }}>{{ $b->name }}</option>
-                        @endforeach
-                    </select>
+                    <div class="w-full lg:flex-1 min-w-0">
+                        <select name="attendance_batch" class="w-full max-w-full py-2 pl-3 pr-8 text-sm bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 outline-none transition-all dark:text-slate-200 shadow-sm appearance-none" style="background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%2394a3b8%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E'); background-repeat: no-repeat, repeat; background-position: right .7em top 50%, 0 0; background-size: .65em auto, 100%;">
+                            <option value="">All Batches</option>
+                            @foreach(\App\Models\ComputerTrainingBatch::orderBy('name')->get() as $b)
+                                <option value="{{ $b->id }}" {{ request('attendance_batch') == $b->id ? 'selected' : '' }}>{{ $b->name }}</option>
+                            @endforeach
+                        </select>
+                    </div>
 
-                    <button type="submit" class="bg-teal-600 hover:bg-teal-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors shadow-sm flex items-center gap-1.5 shrink-0">
-                        <svg class="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"></path></svg>
-                        Apply
-                    </button>
-                    @if(request('attendance_date') || request('attendance_course') || request('attendance_batch') || request('attendance_search'))
-                        <a href="{{ url()->current() }}?tab=attendance" class="text-sm font-medium text-rose-500 hover:text-rose-700 bg-rose-50 hover:bg-rose-100 dark:bg-rose-500/10 dark:hover:bg-rose-500/20 px-3 py-2 rounded-lg transition-colors flex items-center gap-1.5 shrink-0">
-                            <svg class="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-                            Clear
-                        </a>
-                    @endif
+                    <div class="flex items-center gap-2 w-full lg:w-auto min-w-0">
+                        <button type="submit" class="flex-1 lg:flex-none justify-center bg-teal-600 hover:bg-teal-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors shadow-sm flex items-center gap-1.5 shrink-0">
+                            <svg class="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"></path></svg>
+                            Apply
+                        </button>
+                        @if(request('attendance_date') || request('attendance_course') || request('attendance_batch') || request('attendance_search'))
+                            <a href="{{ url()->current() }}?tab=attendance" class="flex-1 lg:flex-none justify-center text-sm font-medium text-rose-500 hover:text-rose-700 bg-rose-50 hover:bg-rose-100 dark:bg-rose-500/10 dark:hover:bg-rose-500/20 px-3 py-2 rounded-lg transition-colors flex items-center gap-1.5 shrink-0">
+                                <svg class="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                                Clear
+                            </a>
+                        @endif
+                    </div>
                 </div>
             </form>
 

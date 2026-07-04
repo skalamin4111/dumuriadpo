@@ -29,6 +29,20 @@
                     <div class="mb-4 grid size-11 place-items-center rounded-md bg-teal-600 font-bold shadow-sm">D</div>
                     <h2 class="text-2xl font-bold">Sign in</h2>
                 </div>
+
+                @if (session('error'))
+                    <div class="mb-4 p-3 bg-rose-500/10 border border-rose-500/20 text-rose-300 rounded text-sm flex items-center gap-2">
+                        <svg class="size-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+                        <span>{{ session('error') }}</span>
+                    </div>
+                @endif
+                @if (session('status'))
+                    <div class="mb-4 p-3 bg-teal-500/10 border border-teal-500/20 text-teal-300 rounded text-sm flex items-center gap-2">
+                        <svg class="size-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                        <span>{{ session('status') }}</span>
+                    </div>
+                @endif
+
                 <label class="mb-4 block">
                     <span class="mb-1 block text-sm text-slate-300">Email</span>
                     <input class="field" type="email" name="email" value="{{ old('email') }}" required autofocus>
