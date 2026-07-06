@@ -102,11 +102,11 @@
         }
 
         .pdf-overlay-page.page-1 {
-            background-image: url("{{ asset('storage/bank-asia/page-1.png') }}");
+            background-image: url("{{ asset('bank-asia/page-1.png') }}");
         }
 
         .pdf-overlay-page.page-2 {
-            background-image: url("{{ asset('storage/bank-asia/page-2.png') }}");
+            background-image: url("{{ asset('bank-asia/page-2.png') }}");
         }
 
         /* Absolutely positioned overlay labels */
