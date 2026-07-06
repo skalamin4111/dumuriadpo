@@ -73,6 +73,30 @@ Route::middleware(['auth', 'active', 'tenant'])->group(function () {
             'destroy' => 'bank-asia.tp-updates.destroy',
         ]);
 
+    // Bank Asia Account Creations
+    Route::resource('services/bank-asia/ac-creations', \App\Http\Controllers\Web\BankAsiaAcCreationController::class)
+        ->names([
+            'index' => 'bank-asia.ac-creations.index',
+            'create' => 'bank-asia.ac-creations.create',
+            'store' => 'bank-asia.ac-creations.store',
+            'show' => 'bank-asia.ac-creations.show',
+            'edit' => 'bank-asia.ac-creations.edit',
+            'update' => 'bank-asia.ac-creations.update',
+            'destroy' => 'bank-asia.ac-creations.destroy',
+        ]);
+
+    // Bank Asia Shonchoy Potros
+    Route::resource('services/bank-asia/shonchoy-potros', \App\Http\Controllers\Web\BankAsiaShonchoyPotroController::class)
+        ->names([
+            'index' => 'bank-asia.shonchoy-potros.index',
+            'create' => 'bank-asia.shonchoy-potros.create',
+            'store' => 'bank-asia.shonchoy-potros.store',
+            'show' => 'bank-asia.shonchoy-potros.show',
+            'edit' => 'bank-asia.shonchoy-potros.edit',
+            'update' => 'bank-asia.shonchoy-potros.update',
+            'destroy' => 'bank-asia.shonchoy-potros.destroy',
+        ]);
+
     Route::get('/services/{service}', [ServiceController::class, 'show'])->name('services.show');
     Route::resource('reminders', ReminderController::class)->only(['index', 'store', 'update']);
     Route::resource('reports', ReportController::class)->only(['index', 'store']);

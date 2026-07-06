@@ -92,7 +92,19 @@ class ServiceController extends Controller
             ]);
         }
         if ($service === 'bank-asia') {
-            return redirect()->route('bank-asia.tp-updates.index');
+            $stats = [
+                'total_accounts' => \App\Models\BankAsiaAcCreation::count(),
+                'pending_accounts' => \App\Models\BankAsiaAcCreation::where('status', 'pending')->count(),
+                'total_tp_updates' => \App\Models\BankAsiaTpUpdate::count(),
+                'active_certificates' => \App\Models\BankAsiaShonchoyPotro::where('status', 'active')->count(),
+                'total_investment' => \App\Models\BankAsiaShonchoyPotro::where('status', 'active')->sum('purchase_amount'),
+            ];
+            
+            $recentAcCreations = \App\Models\BankAsiaAcCreation::latest()->take(5)->get();
+            $recentTpUpdates = \App\Models\BankAsiaTpUpdate::latest()->take(5)->get();
+            $recentCertificates = \App\Models\BankAsiaShonchoyPotro::latest()->take(5)->get();
+            
+            return view('services.bank-asia.index', compact('stats', 'recentAcCreations', 'recentTpUpdates', 'recentCertificates'));
         }
 
         return view('services.show', [
