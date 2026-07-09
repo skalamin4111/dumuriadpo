@@ -102,11 +102,11 @@
         }
 
         .pdf-overlay-page.page-1 {
-            background-image: url("{{ asset('bank-asia/page-1.png') }}");
+            background-image: url("{{ str_replace(['http:', 'https:'], '', asset('bank-asia/page-1.png')) }}");
         }
 
         .pdf-overlay-page.page-2 {
-            background-image: url("{{ asset('bank-asia/page-2.png') }}");
+            background-image: url("{{ str_replace(['http:', 'https:'], '', asset('bank-asia/page-2.png')) }}");
         }
 
         /* Absolutely positioned overlay labels */
@@ -280,7 +280,7 @@
                     {{-- Applicant Signature scan overlay --}}
                     <div class="absolute flex items-center justify-center" style="top: 77.0%; left: 15.0%; width: 150px; height: 65px;">
                         @if($acCreation->applicant_signature_path)
-                            <img src="{{ asset('storage/' . $acCreation->applicant_signature_path) }}" class="max-w-full max-h-full object-contain">
+                            <img src="{{ str_replace(['http:', 'https:'], '', asset('storage/' . $acCreation->applicant_signature_path)) }}" class="max-w-full max-h-full object-contain">
                         @endif
                     </div>
 
@@ -317,7 +317,7 @@
                     {{-- Page 2 Signature box scan overlay --}}
                     <div class="absolute flex items-center justify-center" style="top: 70.3%; left: 69.0%; width: 190px; height: 75px;">
                         @if($acCreation->applicant_signature_path)
-                            <img src="{{ asset('storage/' . $acCreation->applicant_signature_path) }}" class="max-w-full max-h-full object-contain">
+                            <img src="{{ str_replace(['http:', 'https:'], '', asset('storage/' . $acCreation->applicant_signature_path)) }}" class="max-w-full max-h-full object-contain">
                         @endif
                     </div>
                 </div>
@@ -391,7 +391,7 @@
                             <div class="flex flex-col items-center justify-end">
                                 <div class="h-16 flex items-center justify-center mb-2">
                                     @if($acCreation->applicant_signature_path)
-                                        <img src="{{ asset('storage/' . $acCreation->applicant_signature_path) }}" alt="Signature" class="max-h-16 object-contain">
+                                        <img src="{{ str_replace(['http:', 'https:'], '', asset('storage/' . $acCreation->applicant_signature_path)) }}" alt="Signature" class="max-h-16 object-contain">
                                     @else
                                         <div class="w-32 h-10 border-b border-dashed border-slate-400"></div>
                                     @endif
@@ -484,7 +484,7 @@
                                 <td rowspan="4" class="text-center align-middle" style="width: 35%;">
                                     <div class="flex flex-col items-center justify-center h-28">
                                         @if($acCreation->applicant_signature_path)
-                                            <img src="{{ asset('storage/' . $acCreation->applicant_signature_path) }}" alt="Signature" class="max-h-16 object-contain mb-2">
+                                            <img src="{{ str_replace(['http:', 'https:'], '', asset('storage/' . $acCreation->applicant_signature_path)) }}" alt="Signature" class="max-h-16 object-contain mb-2">
                                         @else
                                             <div class="w-24 h-6 border-b border-dashed border-slate-400 mb-2"></div>
                                         @endif

@@ -111,11 +111,11 @@
         }
 
         .pdf-overlay-page.page-1 {
-            background-image: url("<?php echo e(asset('storage/bank-asia/page-1.png')); ?>");
+            background-image: url("<?php echo e(asset('bank-asia/page-1.png')); ?>");
         }
 
         .pdf-overlay-page.page-2 {
-            background-image: url("<?php echo e(asset('storage/bank-asia/page-2.png')); ?>");
+            background-image: url("<?php echo e(asset('bank-asia/page-2.png')); ?>");
         }
 
         /* Absolutely positioned overlay labels */

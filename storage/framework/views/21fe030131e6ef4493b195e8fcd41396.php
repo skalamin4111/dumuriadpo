@@ -1,8 +1,17 @@
-<x-app-layout title="TP Update Print">
-    @php
+<?php if (isset($component)) { $__componentOriginal4619374cef299e94fd7263111d0abc69 = $component; } ?>
+<?php if (isset($attributes)) { $__attributesOriginal4619374cef299e94fd7263111d0abc69 = $attributes; } ?>
+<?php $component = Illuminate\View\AnonymousComponent::resolve(['view' => 'components.app-layout','data' => ['title' => 'TP Update Print']] + (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag ? $attributes->all() : [])); ?>
+<?php $component->withName('app-layout'); ?>
+<?php if ($component->shouldRender()): ?>
+<?php $__env->startComponent($component->resolveView(), $component->data()); ?>
+<?php if (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag): ?>
+<?php $attributes = $attributes->except(\Illuminate\View\AnonymousComponent::ignoredParameterNames()); ?>
+<?php endif; ?>
+<?php $component->withAttributes(['title' => 'TP Update Print']); ?>
+    <?php
         $hasUndertaking = !is_null($tpUpdate->animal_quantity) || !is_null($tpUpdate->total_amount);
         $expectedPages = $hasUndertaking ? 2 : 1;
-    @endphp
+    ?>
     <style>
         @media print {
             /* Hide the application shell elements completely */
@@ -124,7 +133,7 @@
         }
 
         .pdf-overlay-page.tp-form {
-            background-image: url("{{ str_replace(['http:', 'https:'], '', asset('bank-asia/tp_update.jpeg')) }}");
+            background-image: url("<?php echo e(asset('bank-asia/tp_update.jpeg')); ?>");
         }
 
         /* Absolutely positioned overlay labels */
@@ -210,15 +219,15 @@
         }
     </style>
 
-    <div x-data="tpDocumentUpload({{ $expectedPages }})">
+    <div x-data="tpDocumentUpload(<?php echo e($expectedPages); ?>)">
         <div class="mb-6 flex items-center justify-between no-print">
             <div class="flex items-center gap-3">
-                <a href="{{ route('bank-asia.tp-updates.index') }}" class="btn btn-muted flex items-center gap-2">
+                <a href="<?php echo e(route('bank-asia.tp-updates.index')); ?>" class="btn btn-muted flex items-center gap-2">
                     <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
                     Back to List
                 </a>
                 
-                {{-- Mode Switcher tabs --}}
+                
                 <div class="inline-flex rounded-lg p-1 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
                     <button @click="activeTab = 'pdf'" :class="activeTab === 'pdf' ? 'bg-white dark:bg-slate-900 shadow-sm text-indigo-600 dark:text-indigo-400 font-semibold' : 'text-slate-600 dark:text-slate-400'" class="px-4 py-1.5 text-xs rounded-md transition duration-200">
                         পিডিএফ ফিল্ড ভিউ (PDF Overlay)
@@ -229,7 +238,7 @@
                 </div>
             </div>
             <div class="flex gap-3">
-                <a href="{{ route('bank-asia.tp-updates.edit', $tpUpdate) }}" class="btn btn-muted flex items-center gap-2">
+                <a href="<?php echo e(route('bank-asia.tp-updates.edit', $tpUpdate)); ?>" class="btn btn-muted flex items-center gap-2">
                     <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 1 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
                     Edit
                 </a>
@@ -372,28 +381,28 @@
             </div>
         </template>
     <div id="print-area">
-        @php
+        <?php
             $hasRegular = $tpUpdate->regular_daily_tx_count || $tpUpdate->regular_monthly_tx_count ||
                 $tpUpdate->regular_withdrawal_daily_count || $tpUpdate->regular_withdrawal_monthly_count ||
                 $tpUpdate->regular_transfer_daily_count || $tpUpdate->regular_transfer_monthly_count;
             $hasOneTime = $tpUpdate->one_time_cash_deposit_count || $tpUpdate->one_time_cash_withdrawal_count || $tpUpdate->one_time_transfer_count ||
                 $tpUpdate->one_time_cash_deposit_monthly_count || $tpUpdate->one_time_cash_withdrawal_monthly_count || $tpUpdate->one_time_transfer_monthly_count;
-        @endphp
-        {{-- PAGE 1: Undertaking --}}
-        @if(!is_null($tpUpdate->animal_quantity) || !is_null($tpUpdate->total_amount))
+        ?>
+        
+        <?php if(!is_null($tpUpdate->animal_quantity) || !is_null($tpUpdate->total_amount)): ?>
         <div class="print-doc">
             <h1 class="text-2xl font-bold text-center mb-6"
                 style="text-decoration: underline; text-underline-offset: 6px;">অঙ্গীকারনামা</h1>
 
             <p class="text-justify mb-5" style="font-size: 14px; line-height: 1.6;">
-                আমি <span class="font-bold">{{ $tpUpdate->account_name }}</span>, ব্যাংক হিসাব নং <span
-                    class="font-bold">{{ $tpUpdate->account_number }}</span> ব্যাংক এশিয়া এজেন্ট ব্যাংকিং ডিভিশনের
+                আমি <span class="font-bold"><?php echo e($tpUpdate->account_name); ?></span>, ব্যাংক হিসাব নং <span
+                    class="font-bold"><?php echo e($tpUpdate->account_number); ?></span> ব্যাংক এশিয়া এজেন্ট ব্যাংকিং ডিভিশনের
                 ডুমুরিয়া ডিপিও আউটলেটের একজন গ্রাহক। আমি আমার বাড়িতে পারিবারিকভাবে নিয়মিত কয়েকটি গরু লালন-পালন করি। গরু
                 ব্যবসায়িকভাবে পালন না করার কারণে আমার কোন ট্রেড লাইসেন্স নেই।
-                <span class="font-bold">{{ date('d/m/Y', strtotime($tpUpdate->date)) }}</span> ইং তারিখে আমি আমার পালন
+                <span class="font-bold"><?php echo e(date('d/m/Y', strtotime($tpUpdate->date))); ?></span> ইং তারিখে আমি আমার পালন
                 কৃত (<span
-                    class="font-bold">{{ $tpUpdate->animal_quantity ?? '' }}</span>) টি
-                গরু বিক্রি করে <span class="font-bold">{{ number_format($tpUpdate->total_amount ?? 0) }}/=</span>
+                    class="font-bold"><?php echo e($tpUpdate->animal_quantity ?? ''); ?></span>) টি
+                গরু বিক্রি করে <span class="font-bold"><?php echo e(number_format($tpUpdate->total_amount ?? 0)); ?>/=</span>
                 টাকা পাই। উক্ত টাকা ব্যাংক এশিয়া এজেন্ট ব্যাংকিং ডিভিশনে ডুমুরিয়া ডিপিও আউটলেটে আমার উক্ত ব্যাংক হিসাবে
                 রাখতে চাই।
             </p>
@@ -412,7 +421,7 @@
                     <div style="height: 80px;"></div>
                     <div style="border-bottom: 1px dashed #000; width: 100%; margin-bottom: 6px;"></div>
                     <p style="margin: 0; font-size: 14px;">গ্রাহকের নাম ও স্বাক্ষর</p>
-                    <p style="margin: 0; font-size: 14px;">তারিখ: {{ date('d/m/Y', strtotime($tpUpdate->date)) }}</p>
+                    <p style="margin: 0; font-size: 14px;">তারিখ: <?php echo e(date('d/m/Y', strtotime($tpUpdate->date))); ?></p>
                 </div>
             </div>
 
@@ -434,30 +443,32 @@
                     </div>
                     <div class="flex-dotted-row mt-3">
                         <span class="label" style="font-size: 14px;">নাম (এজেন্ট/সিএসও):</span>
-                        <div class="dots text-center pb-1" style="font-size: 14px;">{{ $tpUpdate->agent_name }}</div>
+                        <div class="dots text-center pb-1" style="font-size: 14px;"><?php echo e($tpUpdate->agent_name); ?></div>
                     </div>
                     <div class="flex-dotted-row">
                         <span class="label" style="font-size: 14px;">পদবী:</span>
-                        <div class="dots text-center pb-1" style="font-size: 14px;">{{ $tpUpdate->agent_designation }}
+                        <div class="dots text-center pb-1" style="font-size: 14px;"><?php echo e($tpUpdate->agent_designation); ?>
+
                         </div>
                     </div>
                     <div class="flex-dotted-row">
                         <span class="label" style="font-size: 14px;">মোবাইল নং:</span>
-                        <div class="dots text-center pb-1" style="font-size: 14px;">{{ $tpUpdate->agent_mobile }}</div>
+                        <div class="dots text-center pb-1" style="font-size: 14px;"><?php echo e($tpUpdate->agent_mobile); ?></div>
                     </div>
                     <div class="flex-dotted-row">
                         <span class="label" style="font-size: 14px;">আউটলেটের নাম ও ঠিকানা:</span>
-                        <div class="dots text-center pb-1" style="font-size: 14px;">{{ $tpUpdate->outlet_name_address }}
+                        <div class="dots text-center pb-1" style="font-size: 14px;"><?php echo e($tpUpdate->outlet_name_address); ?>
+
                         </div>
                     </div>
                 </div>
             </div>
         </div>
-        @endif
+        <?php endif; ?>
 
-        {{-- PAGE 2: Application --}}
+        
         <div class="print-digital-only" x-show="activeTab === 'digital'">
-            <div class="print-doc {{ (!is_null($tpUpdate->animal_quantity) || !is_null($tpUpdate->total_amount)) ? 'page-break' : '' }}">
+            <div class="print-doc <?php echo e((!is_null($tpUpdate->animal_quantity) || !is_null($tpUpdate->total_amount)) ? 'page-break' : ''); ?>">
             <div class="flex justify-between items-start mb-2">
                 <div style="line-height: 1.3;">
                     <p style="margin:0;">বরাবর</p>
@@ -467,7 +478,7 @@
                 </div>
                 <div class="flex-dotted-row" style="width: 150px;">
                     <span class="label">তারিখ:</span>
-                    <span class="dots text-center">{{ date('d / m / Y', strtotime($tpUpdate->date)) }}</span>
+                    <span class="dots text-center"><?php echo e(date('d / m / Y', strtotime($tpUpdate->date))); ?></span>
                 </div>
             </div>
 
@@ -481,41 +492,42 @@
                 <tr>
                     <td style="width: 120px; padding: 2px 5px;">হিসাব নম্বর:</td>
                     <td class="font-bold" style="font-size: 14px; letter-spacing: 2px; padding: 2px 5px;">
-                        {{ $tpUpdate->account_number }}
+                        <?php echo e($tpUpdate->account_number); ?>
+
                     </td>
                 </tr>
                 <tr>
                     <td style="padding: 2px 5px;">হিসাব নাম:</td>
-                    <td class="font-bold" style="font-size: 14px; padding: 2px 5px;">{{ $tpUpdate->account_name }}</td>
+                    <td class="font-bold" style="font-size: 14px; padding: 2px 5px;"><?php echo e($tpUpdate->account_name); ?></td>
                 </tr>
             </table>
 
             <div class="flex items-center gap-4 mb-2 text-xs mt-2">
                 <span style="min-width: 80px;">হিসাবের ধরন:</span>
                 <label class="flex items-center"><span
-                        class="checkbox-square">{!! $tpUpdate->account_type == 'Current Account' ? '&#10003;' : '&nbsp;' !!}</span>
+                        class="checkbox-square"><?php echo $tpUpdate->account_type == 'Current Account' ? '&#10003;' : '&nbsp;'; ?></span>
                     কারেন্ট একাউন্ট</label>
                 <label class="flex items-center"><span
-                        class="checkbox-square">{!! $tpUpdate->account_type == 'Savings Account' ? '&#10003;' : '&nbsp;' !!}</span>
+                        class="checkbox-square"><?php echo $tpUpdate->account_type == 'Savings Account' ? '&#10003;' : '&nbsp;'; ?></span>
                     সেভিংস একাউন্ট</label>
                 <label class="flex items-center"><span
-                        class="checkbox-square">{!! $tpUpdate->account_type == 'SND Account' ? '&#10003;' : '&nbsp;' !!}</span>
+                        class="checkbox-square"><?php echo $tpUpdate->account_type == 'SND Account' ? '&#10003;' : '&nbsp;'; ?></span>
                     এস.এন.ডি একাউন্ট</label>
                 <label class="flex items-center"><span
-                        class="checkbox-square">{!! $tpUpdate->account_type == 'Other' ? '&#10003;' : '&nbsp;' !!}</span>
+                        class="checkbox-square"><?php echo $tpUpdate->account_type == 'Other' ? '&#10003;' : '&nbsp;'; ?></span>
                     অন্যান্য</label>
             </div>
 
-            @php
+            <?php
                 $hasRegular = $tpUpdate->regular_daily_tx_count || $tpUpdate->regular_monthly_tx_count ||
                     $tpUpdate->regular_withdrawal_daily_count || $tpUpdate->regular_withdrawal_monthly_count ||
                     $tpUpdate->regular_transfer_daily_count || $tpUpdate->regular_transfer_monthly_count;
                 $hasOneTime = $tpUpdate->one_time_cash_deposit_count || $tpUpdate->one_time_cash_withdrawal_count || $tpUpdate->one_time_transfer_count ||
                     $tpUpdate->one_time_cash_deposit_monthly_count || $tpUpdate->one_time_cash_withdrawal_monthly_count || $tpUpdate->one_time_transfer_monthly_count;
-            @endphp
+            ?>
 
             <div class="mb-1 mt-2 text-xs">
-                <span class="checkbox-square">{!! $hasRegular ? '&#10003;' : '&nbsp;' !!}</span> নিয়মিত লেনদেনের
+                <span class="checkbox-square"><?php echo $hasRegular ? '&#10003;' : '&nbsp;'; ?></span> নিয়মিত লেনদেনের
                 ক্ষেত্রে:
             </div>
             <table class="bengali-table">
@@ -532,29 +544,29 @@
                 </tr>
                 <tr>
                     <td>নগদ জমা</td>
-                    <td class="text-center font-bold">{{ $tpUpdate->regular_daily_tx_count }}</td>
-                    <td class="text-center font-bold">{{ !is_null($tpUpdate->regular_daily_tx_amount) ? number_format($tpUpdate->regular_daily_tx_amount) : '' }}</td>
-                    <td class="text-center font-bold">{{ $tpUpdate->regular_monthly_tx_count }}</td>
-                    <td class="text-center font-bold">{{ !is_null($tpUpdate->regular_monthly_tx_amount) ? number_format($tpUpdate->regular_monthly_tx_amount) : '' }}</td>
+                    <td class="text-center font-bold"><?php echo e($tpUpdate->regular_daily_tx_count); ?></td>
+                    <td class="text-center font-bold"><?php echo e(!is_null($tpUpdate->regular_daily_tx_amount) ? number_format($tpUpdate->regular_daily_tx_amount) : ''); ?></td>
+                    <td class="text-center font-bold"><?php echo e($tpUpdate->regular_monthly_tx_count); ?></td>
+                    <td class="text-center font-bold"><?php echo e(!is_null($tpUpdate->regular_monthly_tx_amount) ? number_format($tpUpdate->regular_monthly_tx_amount) : ''); ?></td>
                 </tr>
                 <tr>
                     <td>নগদ উত্তোলন</td>
-                    <td class="text-center font-bold">{{ $tpUpdate->regular_withdrawal_daily_count }}</td>
-                    <td class="text-center font-bold">{{ !is_null($tpUpdate->regular_withdrawal_daily_amount) ? number_format($tpUpdate->regular_withdrawal_daily_amount) : '' }}</td>
-                    <td class="text-center font-bold">{{ $tpUpdate->regular_withdrawal_monthly_count }}</td>
-                    <td class="text-center font-bold">{{ !is_null($tpUpdate->regular_withdrawal_monthly_amount) ? number_format($tpUpdate->regular_withdrawal_monthly_amount) : '' }}</td>
+                    <td class="text-center font-bold"><?php echo e($tpUpdate->regular_withdrawal_daily_count); ?></td>
+                    <td class="text-center font-bold"><?php echo e(!is_null($tpUpdate->regular_withdrawal_daily_amount) ? number_format($tpUpdate->regular_withdrawal_daily_amount) : ''); ?></td>
+                    <td class="text-center font-bold"><?php echo e($tpUpdate->regular_withdrawal_monthly_count); ?></td>
+                    <td class="text-center font-bold"><?php echo e(!is_null($tpUpdate->regular_withdrawal_monthly_amount) ? number_format($tpUpdate->regular_withdrawal_monthly_amount) : ''); ?></td>
                 </tr>
                 <tr>
                     <td>স্থানান্তর লেনদেন</td>
-                    <td class="text-center font-bold">{{ $tpUpdate->regular_transfer_daily_count }}</td>
-                    <td class="text-center font-bold">{{ !is_null($tpUpdate->regular_transfer_daily_amount) ? number_format($tpUpdate->regular_transfer_daily_amount) : '' }}</td>
-                    <td class="text-center font-bold">{{ $tpUpdate->regular_transfer_monthly_count }}</td>
-                    <td class="text-center font-bold">{{ !is_null($tpUpdate->regular_transfer_monthly_amount) ? number_format($tpUpdate->regular_transfer_monthly_amount) : '' }}</td>
+                    <td class="text-center font-bold"><?php echo e($tpUpdate->regular_transfer_daily_count); ?></td>
+                    <td class="text-center font-bold"><?php echo e(!is_null($tpUpdate->regular_transfer_daily_amount) ? number_format($tpUpdate->regular_transfer_daily_amount) : ''); ?></td>
+                    <td class="text-center font-bold"><?php echo e($tpUpdate->regular_transfer_monthly_count); ?></td>
+                    <td class="text-center font-bold"><?php echo e(!is_null($tpUpdate->regular_transfer_monthly_amount) ? number_format($tpUpdate->regular_transfer_monthly_amount) : ''); ?></td>
                 </tr>
             </table>
 
             <div class="mb-1 mt-2 text-xs">
-                <span class="checkbox-square">{!! $hasOneTime ? '&#10003;' : '&nbsp;' !!}</span> একবার লেনদেনের
+                <span class="checkbox-square"><?php echo $hasOneTime ? '&#10003;' : '&nbsp;'; ?></span> একবার লেনদেনের
                 ক্ষেত্রে:
             </div>
             <table class="bengali-table">
@@ -571,24 +583,24 @@
                 </tr>
                 <tr>
                     <td>নগদ জমা</td>
-                    <td class="text-center font-bold">{{ $tpUpdate->one_time_cash_deposit_count }}</td>
-                    <td class="text-center font-bold">{{ !is_null($tpUpdate->one_time_cash_deposit_amount) ? number_format($tpUpdate->one_time_cash_deposit_amount) : '' }}</td>
-                    <td class="text-center font-bold">{{ $tpUpdate->one_time_cash_deposit_monthly_count }}</td>
-                    <td class="text-center font-bold">{{ !is_null($tpUpdate->one_time_cash_deposit_monthly_amount) ? number_format($tpUpdate->one_time_cash_deposit_monthly_amount) : '' }}</td>
+                    <td class="text-center font-bold"><?php echo e($tpUpdate->one_time_cash_deposit_count); ?></td>
+                    <td class="text-center font-bold"><?php echo e(!is_null($tpUpdate->one_time_cash_deposit_amount) ? number_format($tpUpdate->one_time_cash_deposit_amount) : ''); ?></td>
+                    <td class="text-center font-bold"><?php echo e($tpUpdate->one_time_cash_deposit_monthly_count); ?></td>
+                    <td class="text-center font-bold"><?php echo e(!is_null($tpUpdate->one_time_cash_deposit_monthly_amount) ? number_format($tpUpdate->one_time_cash_deposit_monthly_amount) : ''); ?></td>
                 </tr>
                 <tr>
                     <td>নগদ উত্তোলন</td>
-                    <td class="text-center font-bold">{{ $tpUpdate->one_time_cash_withdrawal_count }}</td>
-                    <td class="text-center font-bold">{{ !is_null($tpUpdate->one_time_cash_withdrawal_amount) ? number_format($tpUpdate->one_time_cash_withdrawal_amount) : '' }}</td>
-                    <td class="text-center font-bold">{{ $tpUpdate->one_time_cash_withdrawal_monthly_count }}</td>
-                    <td class="text-center font-bold">{{ !is_null($tpUpdate->one_time_cash_withdrawal_monthly_amount) ? number_format($tpUpdate->one_time_cash_withdrawal_monthly_amount) : '' }}</td>
+                    <td class="text-center font-bold"><?php echo e($tpUpdate->one_time_cash_withdrawal_count); ?></td>
+                    <td class="text-center font-bold"><?php echo e(!is_null($tpUpdate->one_time_cash_withdrawal_amount) ? number_format($tpUpdate->one_time_cash_withdrawal_amount) : ''); ?></td>
+                    <td class="text-center font-bold"><?php echo e($tpUpdate->one_time_cash_withdrawal_monthly_count); ?></td>
+                    <td class="text-center font-bold"><?php echo e(!is_null($tpUpdate->one_time_cash_withdrawal_monthly_amount) ? number_format($tpUpdate->one_time_cash_withdrawal_monthly_amount) : ''); ?></td>
                 </tr>
                 <tr>
                     <td>স্থানান্তর লেনদেন</td>
-                    <td class="text-center font-bold">{{ $tpUpdate->one_time_transfer_count }}</td>
-                    <td class="text-center font-bold">{{ !is_null($tpUpdate->one_time_transfer_amount) ? number_format($tpUpdate->one_time_transfer_amount) : '' }}</td>
-                    <td class="text-center font-bold">{{ $tpUpdate->one_time_transfer_monthly_count }}</td>
-                    <td class="text-center font-bold">{{ !is_null($tpUpdate->one_time_transfer_monthly_amount) ? number_format($tpUpdate->one_time_transfer_monthly_amount) : '' }}</td>
+                    <td class="text-center font-bold"><?php echo e($tpUpdate->one_time_transfer_count); ?></td>
+                    <td class="text-center font-bold"><?php echo e(!is_null($tpUpdate->one_time_transfer_amount) ? number_format($tpUpdate->one_time_transfer_amount) : ''); ?></td>
+                    <td class="text-center font-bold"><?php echo e($tpUpdate->one_time_transfer_monthly_count); ?></td>
+                    <td class="text-center font-bold"><?php echo e(!is_null($tpUpdate->one_time_transfer_monthly_amount) ? number_format($tpUpdate->one_time_transfer_monthly_amount) : ''); ?></td>
                 </tr>
             </table>
 
@@ -596,7 +608,8 @@
                 <p style="margin-bottom: 2px;">লেনদেনের তহবিলের উৎস:</p>
                 <div
                     style="border: 1px solid #000; height: 26px; width: 100%; padding: 2px 8px; box-sizing: border-box; font-size: 12px; line-height: 20px;">
-                    {{ $tpUpdate->source_of_funds }}
+                    <?php echo e($tpUpdate->source_of_funds); ?>
+
                 </div>
             </div>
 
@@ -612,11 +625,11 @@
                         <p class="mb-1 text-xs">(১) স্বাক্ষর ও সীল:</p>
                         <div class="flex-dotted-row">
                             <span class="label">গ্রাহকের নাম:</span>
-                            <div class="dots text-center">{{ $tpUpdate->account_name }}</div>
+                            <div class="dots text-center"><?php echo e($tpUpdate->account_name); ?></div>
                         </div>
                         <div class="flex-dotted-row">
                             <span class="label">ফোন/মোবাইল নম্বর:</span>
-                            <div class="dots text-center">{{ $tpUpdate->client_mobile }}</div>
+                            <div class="dots text-center"><?php echo e($tpUpdate->client_mobile); ?></div>
                         </div>
                     </div>
                     <div style="width: 32%;">
@@ -654,19 +667,19 @@
                     </div>
                     <div class="flex-dotted-row mt-2">
                         <span class="label">এজেন্ট/সিএসওর নাম:</span>
-                        <div class="dots text-center">{{ $tpUpdate->agent_name }}</div>
+                        <div class="dots text-center"><?php echo e($tpUpdate->agent_name); ?></div>
                     </div>
                     <div class="flex-dotted-row">
                         <span class="label">তারিখ:</span>
-                        <div class="dots text-center">{{ date('d/m/Y', strtotime($tpUpdate->date)) }}</div>
+                        <div class="dots text-center"><?php echo e(date('d/m/Y', strtotime($tpUpdate->date))); ?></div>
                     </div>
                     <div class="flex-dotted-row">
                         <span class="label">আউটলেটের নাম:</span>
-                        <div class="dots text-center">{{ $tpUpdate->outlet_name_address }}</div>
+                        <div class="dots text-center"><?php echo e($tpUpdate->outlet_name_address); ?></div>
                     </div>
                     <div class="flex-dotted-row">
                         <span class="label">ফোন/মোবাইল নম্বর:</span>
-                        <div class="dots text-center">{{ $tpUpdate->agent_mobile }}</div>
+                        <div class="dots text-center"><?php echo e($tpUpdate->agent_mobile); ?></div>
                     </div>
                 </div>
                 <div class="signature-box" style="width: 49%;">
@@ -700,103 +713,113 @@
         </div>
 
         <div class="print-pdf-only" x-show="activeTab === 'pdf'">
-            <div class="pdf-overlay-page tp-form {{ (!is_null($tpUpdate->animal_quantity) || !is_null($tpUpdate->total_amount)) ? 'page-break' : '' }}">
-                {{-- Date --}}
-                <div class="overlay-field font-bold font-mono" style="top: 10.5%; left: 78.5%;">
-                    {{ date('d / m / Y', strtotime($tpUpdate->date)) }}
+            <div class="pdf-overlay-page tp-form <?php echo e((!is_null($tpUpdate->animal_quantity) || !is_null($tpUpdate->total_amount)) ? 'page-break' : ''); ?>">
+                
+                <div class="overlay-field font-bold font-mono" style="top: 11.2%; left: 79.5%;">
+                    <?php echo e(date('d / m / Y', strtotime($tpUpdate->date))); ?>
+
                 </div>
 
-                {{-- Account Number --}}
-                <div class="overlay-field font-mono font-bold" style="top: 28.7%; left: 50.0%; font-size: 15px; letter-spacing: 2px;">
-                    {{ $tpUpdate->account_number }}
+                
+                <div class="overlay-field font-mono font-bold" style="top: 22.8%; left: 50.0%; font-size: 15px; letter-spacing: 2px;">
+                    <?php echo e($tpUpdate->account_number); ?>
+
                 </div>
 
-                {{-- Account Name --}}
-                <div class="overlay-field font-bold" style="top: 31.8%; left: 50.0%; font-size: 14px;">
-                    {{ $tpUpdate->account_name }}
+                
+                <div class="overlay-field font-bold" style="top: 26.2%; left: 50.0%; font-size: 14px;">
+                    <?php echo e($tpUpdate->account_name); ?>
+
                 </div>
 
-                {{-- Account Type Checkboxes --}}
-                @if($tpUpdate->account_type == 'Current Account')
-                    <div class="overlay-field font-bold text-lg" style="top: 34.9%; left: 49.8%;">✔</div>
-                @endif
-                @if($tpUpdate->account_type == 'Savings Account')
-                    <div class="overlay-field font-bold text-lg" style="top: 34.9%; left: 59.0%;">✔</div>
-                @endif
-                @if($tpUpdate->account_type == 'SND Account')
-                    <div class="overlay-field font-bold text-lg" style="top: 34.9%; left: 69.3%;">✔</div>
-                @endif
-                @if($tpUpdate->account_type == 'Other')
-                    <div class="overlay-field font-bold text-lg" style="top: 34.9%; left: 80.6%;">✔</div>
-                @endif
+                
+                <?php if($tpUpdate->account_type == 'Current Account'): ?>
+                    <div class="overlay-field font-bold text-lg" style="top: 29.8%; left: 49.8%;">✔</div>
+                <?php endif; ?>
+                <?php if($tpUpdate->account_type == 'Savings Account'): ?>
+                    <div class="overlay-field font-bold text-lg" style="top: 29.8%; left: 59.0%;">✔</div>
+                <?php endif; ?>
+                <?php if($tpUpdate->account_type == 'SND Account'): ?>
+                    <div class="overlay-field font-bold text-lg" style="top: 29.8%; left: 69.3%;">✔</div>
+                <?php endif; ?>
+                <?php if($tpUpdate->account_type == 'Other'): ?>
+                    <div class="overlay-field font-bold text-lg" style="top: 29.8%; left: 80.6%;">✔</div>
+                <?php endif; ?>
 
-                {{-- Regular Tx Checkbox --}}
-                @if($hasRegular)
-                    <div class="overlay-field font-bold text-lg" style="top: 37.8%; left: 32.4%;">✔</div>
-                @endif
+                
+                <?php if($hasRegular): ?>
+                    <div class="overlay-field font-bold text-lg" style="top: 32.6%; left: 40.4%;">✔</div>
+                <?php endif; ?>
 
-                {{-- Regular Tx Table --}}
-                <div class="overlay-field font-bold font-mono" style="top: 45.2%; left: 54.0%;">{{ $tpUpdate->regular_daily_tx_count }}</div>
-                <div class="overlay-field font-bold font-mono" style="top: 45.2%; left: 63.5%;">{{ !is_null($tpUpdate->regular_daily_tx_amount) ? number_format($tpUpdate->regular_daily_tx_amount) : '' }}</div>
-                <div class="overlay-field font-bold font-mono" style="top: 45.2%; left: 74.0%;">{{ $tpUpdate->regular_monthly_tx_count }}</div>
-                <div class="overlay-field font-bold font-mono" style="top: 45.2%; left: 83.5%;">{{ !is_null($tpUpdate->regular_monthly_tx_amount) ? number_format($tpUpdate->regular_monthly_tx_amount) : '' }}</div>
+                
+                <div class="overlay-field font-bold font-mono" style="top: 42.4%; left: 54.0%;"><?php echo e($tpUpdate->regular_daily_tx_count); ?></div>
+                <div class="overlay-field font-bold font-mono" style="top: 42.4%; left: 63.5%;"><?php echo e(!is_null($tpUpdate->regular_daily_tx_amount) ? number_format($tpUpdate->regular_daily_tx_amount) : ''); ?></div>
+                <div class="overlay-field font-bold font-mono" style="top: 42.4%; left: 74.0%;"><?php echo e($tpUpdate->regular_monthly_tx_count); ?></div>
+                <div class="overlay-field font-bold font-mono" style="top: 42.4%; left: 83.5%;"><?php echo e(!is_null($tpUpdate->regular_monthly_tx_amount) ? number_format($tpUpdate->regular_monthly_tx_amount) : ''); ?></div>
 
-                <div class="overlay-field font-bold font-mono" style="top: 47.9%; left: 54.0%;">{{ $tpUpdate->regular_withdrawal_daily_count }}</div>
-                <div class="overlay-field font-bold font-mono" style="top: 47.9%; left: 63.5%;">{{ !is_null($tpUpdate->regular_withdrawal_daily_amount) ? number_format($tpUpdate->regular_withdrawal_daily_amount) : '' }}</div>
-                <div class="overlay-field font-bold font-mono" style="top: 47.9%; left: 74.0%;">{{ $tpUpdate->regular_withdrawal_monthly_count }}</div>
-                <div class="overlay-field font-bold font-mono" style="top: 47.9%; left: 83.5%;">{{ !is_null($tpUpdate->regular_withdrawal_monthly_amount) ? number_format($tpUpdate->regular_withdrawal_monthly_amount) : '' }}</div>
+                <div class="overlay-field font-bold font-mono" style="top: 45.3%; left: 54.0%;"><?php echo e($tpUpdate->regular_withdrawal_daily_count); ?></div>
+                <div class="overlay-field font-bold font-mono" style="top: 45.3%; left: 63.5%;"><?php echo e(!is_null($tpUpdate->regular_withdrawal_daily_amount) ? number_format($tpUpdate->regular_withdrawal_daily_amount) : ''); ?></div>
+                <div class="overlay-field font-bold font-mono" style="top: 45.3%; left: 74.0%;"><?php echo e($tpUpdate->regular_withdrawal_monthly_count); ?></div>
+                <div class="overlay-field font-bold font-mono" style="top: 45.3%; left: 83.5%;"><?php echo e(!is_null($tpUpdate->regular_withdrawal_monthly_amount) ? number_format($tpUpdate->regular_withdrawal_monthly_amount) : ''); ?></div>
 
-                <div class="overlay-field font-bold font-mono" style="top: 50.5%; left: 54.0%;">{{ $tpUpdate->regular_transfer_daily_count }}</div>
-                <div class="overlay-field font-bold font-mono" style="top: 50.5%; left: 63.5%;">{{ !is_null($tpUpdate->regular_transfer_daily_amount) ? number_format($tpUpdate->regular_transfer_daily_amount) : '' }}</div>
-                <div class="overlay-field font-bold font-mono" style="top: 50.5%; left: 74.0%;">{{ $tpUpdate->regular_transfer_monthly_count }}</div>
-                <div class="overlay-field font-bold font-mono" style="top: 50.5%; left: 83.5%;">{{ !is_null($tpUpdate->regular_transfer_monthly_amount) ? number_format($tpUpdate->regular_transfer_monthly_amount) : '' }}</div>
+                <div class="overlay-field font-bold font-mono" style="top: 48.2%; left: 54.0%;"><?php echo e($tpUpdate->regular_transfer_daily_count); ?></div>
+                <div class="overlay-field font-bold font-mono" style="top: 48.2%; left: 63.5%;"><?php echo e(!is_null($tpUpdate->regular_transfer_daily_amount) ? number_format($tpUpdate->regular_transfer_daily_amount) : ''); ?></div>
+                <div class="overlay-field font-bold font-mono" style="top: 48.2%; left: 74.0%;"><?php echo e($tpUpdate->regular_transfer_monthly_count); ?></div>
+                <div class="overlay-field font-bold font-mono" style="top: 48.2%; left: 83.5%;"><?php echo e(!is_null($tpUpdate->regular_transfer_monthly_amount) ? number_format($tpUpdate->regular_transfer_monthly_amount) : ''); ?></div>
 
-                {{-- One-Time Tx Checkbox --}}
-                @if($hasOneTime)
-                    <div class="overlay-field font-bold text-lg" style="top: 52.9%; left: 32.4%;">✔</div>
-                @endif
+                
+                <?php if($hasOneTime): ?>
+                    <div class="overlay-field font-bold text-lg" style="top: 51.8%; left: 40.4%;">✔</div>
+                <?php endif; ?>
 
-                {{-- One-Time Tx Table --}}
-                <div class="overlay-field font-bold font-mono" style="top: 60.5%; left: 54.0%;">{{ $tpUpdate->one_time_cash_deposit_count }}</div>
-                <div class="overlay-field font-bold font-mono" style="top: 60.5%; left: 63.5%;">{{ !is_null($tpUpdate->one_time_cash_deposit_amount) ? number_format($tpUpdate->one_time_cash_deposit_amount) : '' }}</div>
-                <div class="overlay-field font-bold font-mono" style="top: 60.5%; left: 74.0%;">{{ $tpUpdate->one_time_cash_deposit_monthly_count }}</div>
-                <div class="overlay-field font-bold font-mono" style="top: 60.5%; left: 83.5%;">{{ !is_null($tpUpdate->one_time_cash_deposit_monthly_amount) ? number_format($tpUpdate->one_time_cash_deposit_monthly_amount) : '' }}</div>
+                
+                <div class="overlay-field font-bold font-mono" style="top: 61.6%; left: 54.0%;"><?php echo e($tpUpdate->one_time_cash_deposit_count); ?></div>
+                <div class="overlay-field font-bold font-mono" style="top: 61.6%; left: 63.5%;"><?php echo e(!is_null($tpUpdate->one_time_cash_deposit_amount) ? number_format($tpUpdate->one_time_cash_deposit_amount) : ''); ?></div>
+                <div class="overlay-field font-bold font-mono" style="top: 61.6%; left: 74.0%;"><?php echo e($tpUpdate->one_time_cash_deposit_monthly_count); ?></div>
+                <div class="overlay-field font-bold font-mono" style="top: 61.6%; left: 83.5%;"><?php echo e(!is_null($tpUpdate->one_time_cash_deposit_monthly_amount) ? number_format($tpUpdate->one_time_cash_deposit_monthly_amount) : ''); ?></div>
 
-                <div class="overlay-field font-bold font-mono" style="top: 63.1%; left: 54.0%;">{{ $tpUpdate->one_time_cash_withdrawal_count }}</div>
-                <div class="overlay-field font-bold font-mono" style="top: 63.1%; left: 63.5%;">{{ !is_null($tpUpdate->one_time_cash_withdrawal_amount) ? number_format($tpUpdate->one_time_cash_withdrawal_amount) : '' }}</div>
-                <div class="overlay-field font-bold font-mono" style="top: 63.1%; left: 74.0%;">{{ $tpUpdate->one_time_cash_withdrawal_monthly_count }}</div>
-                <div class="overlay-field font-bold font-mono" style="top: 63.1%; left: 83.5%;">{{ !is_null($tpUpdate->one_time_cash_withdrawal_monthly_amount) ? number_format($tpUpdate->one_time_cash_withdrawal_monthly_amount) : '' }}</div>
+                <div class="overlay-field font-bold font-mono" style="top: 64.5%; left: 54.0%;"><?php echo e($tpUpdate->one_time_cash_withdrawal_count); ?></div>
+                <div class="overlay-field font-bold font-mono" style="top: 64.5%; left: 63.5%;"><?php echo e(!is_null($tpUpdate->one_time_cash_withdrawal_amount) ? number_format($tpUpdate->one_time_cash_withdrawal_amount) : ''); ?></div>
+                <div class="overlay-field font-bold font-mono" style="top: 64.5%; left: 74.0%;"><?php echo e($tpUpdate->one_time_cash_withdrawal_monthly_count); ?></div>
+                <div class="overlay-field font-bold font-mono" style="top: 64.5%; left: 83.5%;"><?php echo e(!is_null($tpUpdate->one_time_cash_withdrawal_monthly_amount) ? number_format($tpUpdate->one_time_cash_withdrawal_monthly_amount) : ''); ?></div>
 
-                <div class="overlay-field font-bold font-mono" style="top: 65.8%; left: 54.0%;">{{ $tpUpdate->one_time_transfer_count }}</div>
-                <div class="overlay-field font-bold font-mono" style="top: 65.8%; left: 63.5%;">{{ !is_null($tpUpdate->one_time_transfer_amount) ? number_format($tpUpdate->one_time_transfer_amount) : '' }}</div>
-                <div class="overlay-field font-bold font-mono" style="top: 65.8%; left: 74.0%;">{{ $tpUpdate->one_time_transfer_monthly_count }}</div>
-                <div class="overlay-field font-bold font-mono" style="top: 65.8%; left: 83.5%;">{{ !is_null($tpUpdate->one_time_transfer_monthly_amount) ? number_format($tpUpdate->one_time_transfer_monthly_amount) : '' }}</div>
+                <div class="overlay-field font-bold font-mono" style="top: 67.4%; left: 54.0%;"><?php echo e($tpUpdate->one_time_transfer_count); ?></div>
+                <div class="overlay-field font-bold font-mono" style="top: 67.4%; left: 63.5%;"><?php echo e(!is_null($tpUpdate->one_time_transfer_amount) ? number_format($tpUpdate->one_time_transfer_amount) : ''); ?></div>
+                <div class="overlay-field font-bold font-mono" style="top: 67.4%; left: 74.0%;"><?php echo e($tpUpdate->one_time_transfer_monthly_count); ?></div>
+                <div class="overlay-field font-bold font-mono" style="top: 67.4%; left: 83.5%;"><?php echo e(!is_null($tpUpdate->one_time_transfer_monthly_amount) ? number_format($tpUpdate->one_time_transfer_monthly_amount) : ''); ?></div>
 
-                {{-- Source of Funds --}}
-                <div class="overlay-field font-bold" style="top: 69.2%; left: 50.5%; width: 41.5%; font-size: 13px;">
-                    {{ $tpUpdate->source_of_funds }}
+                
+                <div class="overlay-field font-bold" style="top: 71.0%; left: 50.5%; width: 41.5%; font-size: 13px;">
+                    <?php echo e($tpUpdate->source_of_funds); ?>
+
                 </div>
 
-                {{-- Client Info --}}
-                <div class="overlay-field font-bold" style="top: 78.3%; left: 42.0%; font-size: 12px;">
-                    {{ $tpUpdate->account_name }}
+                
+                <div class="overlay-field font-bold" style="top: 78.4%; left: 42.0%; font-size: 12px;">
+                    <?php echo e($tpUpdate->account_name); ?>
+
                 </div>
-                <div class="overlay-field font-bold font-mono" style="top: 80.5%; left: 45.0%; font-size: 12px;">
-                    {{ $tpUpdate->client_mobile }}
+                <div class="overlay-field font-bold font-mono" style="top: 80.6%; left: 45.0%; font-size: 12px;">
+                    <?php echo e($tpUpdate->client_mobile); ?>
+
                 </div>
 
-                {{-- Agent Details --}}
-                <div class="overlay-field font-bold" style="top: 86.5%; left: 21.0%; font-size: 12.5px;">
-                    {{ $tpUpdate->agent_name }}
+                
+                <div class="overlay-field font-bold" style="top: 86.8%; left: 21.0%; font-size: 12.5px;">
+                    <?php echo e($tpUpdate->agent_name); ?>
+
                 </div>
-                <div class="overlay-field font-bold" style="top: 88.7%; left: 21.0%; font-size: 12.5px;">
-                    {{ date('d / m / Y', strtotime($tpUpdate->date)) }}
+                <div class="overlay-field font-bold" style="top: 88.9%; left: 21.0%; font-size: 12.5px;">
+                    <?php echo e(date('d / m / Y', strtotime($tpUpdate->date))); ?>
+
                 </div>
-                <div class="overlay-field font-bold" style="top: 90.7%; left: 21.0%; font-size: 12.5px;">
-                    {{ $tpUpdate->outlet_name_address }}
+                <div class="overlay-field font-bold" style="top: 90.9%; left: 21.0%; font-size: 12.5px;">
+                    <?php echo e($tpUpdate->outlet_name_address); ?>
+
                 </div>
-                <div class="overlay-field font-bold font-mono" style="top: 92.7%; left: 21.0%; font-size: 12.5px;">
-                    {{ $tpUpdate->agent_mobile }}
+                <div class="overlay-field font-bold font-mono" style="top: 92.8%; left: 21.0%; font-size: 12.5px;">
+                    <?php echo e($tpUpdate->agent_mobile); ?>
+
                 </div>
             </div>
         </div>
@@ -965,7 +988,7 @@
                     // Get current canvas
                     this.croppedPages.push(this.getFilteredCanvas());
                     
-                    const fileNameBase = `TP_Update_{{ $tpUpdate->account_number }}`;
+                    const fileNameBase = `TP_Update_<?php echo e($tpUpdate->account_number); ?>`;
                     let shareFiles = [];
                     let fallbackAction = () => {};
                     
@@ -1020,7 +1043,7 @@
                     // Open Email Client / Share Menu
                     const emailTo = "abd.tp@bankasia-bd.com";
                     const emailCC = "newton.roy@bankasia-bd.com,sm.noman@bankasia-bd.com,m.salahuddin@bankasia-bd.com,mazedul.info@gmail.com";
-                    const emailSubject = `Tp update request for ac {{ $tpUpdate->account_number }}`;
+                    const emailSubject = `Tp update request for ac <?php echo e($tpUpdate->account_number); ?>`;
                     const emailText = `Dear sir,\n\nPlease find the attached file and make suitable arrangement to update tp.`;
                     
                     const shareData = {
@@ -1053,4 +1076,13 @@
             }));
         });
     </script>
-</x-app-layout>
+ <?php echo $__env->renderComponent(); ?>
+<?php endif; ?>
+<?php if (isset($__attributesOriginal4619374cef299e94fd7263111d0abc69)): ?>
+<?php $attributes = $__attributesOriginal4619374cef299e94fd7263111d0abc69; ?>
+<?php unset($__attributesOriginal4619374cef299e94fd7263111d0abc69); ?>
+<?php endif; ?>
+<?php if (isset($__componentOriginal4619374cef299e94fd7263111d0abc69)): ?>
+<?php $component = $__componentOriginal4619374cef299e94fd7263111d0abc69; ?>
+<?php unset($__componentOriginal4619374cef299e94fd7263111d0abc69); ?>
+<?php endif; ?><?php /**PATH /home/sahil/development/office_project/dpoerp/resources/views/services/bank-asia/tp-updates/show.blade.php ENDPATH**/ ?>
