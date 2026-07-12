@@ -133,7 +133,7 @@
         }
 
         .pdf-overlay-page.tp-form {
-            background-image: url("<?php echo e(asset('bank-asia/tp_update.jpeg')); ?>");
+            background-image: url("<?php echo e(str_replace(['http:', 'https:'], '', asset('bank-asia/tp_update.jpeg'))); ?>");
         }
 
         /* Absolutely positioned overlay labels */
@@ -715,109 +715,108 @@
         <div class="print-pdf-only" x-show="activeTab === 'pdf'">
             <div class="pdf-overlay-page tp-form <?php echo e((!is_null($tpUpdate->animal_quantity) || !is_null($tpUpdate->total_amount)) ? 'page-break' : ''); ?>">
                 
-                <div class="overlay-field font-bold font-mono" style="top: 11.2%; left: 79.5%;">
-                    <?php echo e(date('d / m / Y', strtotime($tpUpdate->date))); ?>
-
+                <div class="overlay-field font-bold font-mono" style="top: 7.9%; left: 78.5%;">
+                    <?php echo e(date('d', strtotime($tpUpdate->date))); ?><span style="margin: 0 17px;"><?php echo e(date('m', strtotime($tpUpdate->date))); ?></span><span style="margin: 0px;"><?php echo e(date('Y', strtotime($tpUpdate->date))); ?></span>
                 </div>
 
                 
-                <div class="overlay-field font-mono font-bold" style="top: 22.8%; left: 50.0%; font-size: 15px; letter-spacing: 2px;">
+                <div class="overlay-field font-mono font-bold" style="top: 22.6%; left: 28.0%; font-size: 15px; letter-spacing: 2px;">
                     <?php echo e($tpUpdate->account_number); ?>
 
                 </div>
 
                 
-                <div class="overlay-field font-bold" style="top: 26.2%; left: 50.0%; font-size: 14px;">
+                <div class="overlay-field font-bold" style="top: 25.3%; left: 28.0%; font-size: 14px;">
                     <?php echo e($tpUpdate->account_name); ?>
 
                 </div>
 
                 
                 <?php if($tpUpdate->account_type == 'Current Account'): ?>
-                    <div class="overlay-field font-bold text-lg" style="top: 29.8%; left: 49.8%;">✔</div>
+                    <div class="overlay-field font-bold text-lg" style="top:27.1%; left: 27.2%;">✔</div>
                 <?php endif; ?>
                 <?php if($tpUpdate->account_type == 'Savings Account'): ?>
-                    <div class="overlay-field font-bold text-lg" style="top: 29.8%; left: 59.0%;">✔</div>
+                    <div class="overlay-field font-bold text-lg" style="top: 27.1%; left: 43.8%;">✔</div>
                 <?php endif; ?>
                 <?php if($tpUpdate->account_type == 'SND Account'): ?>
-                    <div class="overlay-field font-bold text-lg" style="top: 29.8%; left: 69.3%;">✔</div>
+                    <div class="overlay-field font-bold text-lg" style="top: 27.1%; left: 62.3%;">✔</div>
                 <?php endif; ?>
                 <?php if($tpUpdate->account_type == 'Other'): ?>
-                    <div class="overlay-field font-bold text-lg" style="top: 29.8%; left: 80.6%;">✔</div>
+                    <div class="overlay-field font-bold text-lg" style="top: 27.1%; left: 82.7%;">✔</div>
                 <?php endif; ?>
 
                 
                 <?php if($hasRegular): ?>
-                    <div class="overlay-field font-bold text-lg" style="top: 32.6%; left: 40.4%;">✔</div>
+                    <div class="overlay-field font-bold text-lg" style="top: 29.4%; left: 9.9%;">✔</div>
                 <?php endif; ?>
 
                 
-                <div class="overlay-field font-bold font-mono" style="top: 42.4%; left: 54.0%;"><?php echo e($tpUpdate->regular_daily_tx_count); ?></div>
-                <div class="overlay-field font-bold font-mono" style="top: 42.4%; left: 63.5%;"><?php echo e(!is_null($tpUpdate->regular_daily_tx_amount) ? number_format($tpUpdate->regular_daily_tx_amount) : ''); ?></div>
-                <div class="overlay-field font-bold font-mono" style="top: 42.4%; left: 74.0%;"><?php echo e($tpUpdate->regular_monthly_tx_count); ?></div>
-                <div class="overlay-field font-bold font-mono" style="top: 42.4%; left: 83.5%;"><?php echo e(!is_null($tpUpdate->regular_monthly_tx_amount) ? number_format($tpUpdate->regular_monthly_tx_amount) : ''); ?></div>
+                <div class="overlay-field font-bold font-mono" style="top: 34.5%; left: 35.0%;"><?php echo e($tpUpdate->regular_daily_tx_count); ?></div>
+                <div class="overlay-field font-bold font-mono" style="top: 34.5%; left: 47.5%;"><?php echo e(!is_null($tpUpdate->regular_daily_tx_amount) ? number_format($tpUpdate->regular_daily_tx_amount) : ''); ?></div>
+                <div class="overlay-field font-bold font-mono" style="top: 34.5%; left: 66.0%;"><?php echo e($tpUpdate->regular_monthly_tx_count); ?></div>
+                <div class="overlay-field font-bold font-mono" style="top: 34.5%; left: 79.5%;"><?php echo e(!is_null($tpUpdate->regular_monthly_tx_amount) ? number_format($tpUpdate->regular_monthly_tx_amount) : ''); ?></div>
 
-                <div class="overlay-field font-bold font-mono" style="top: 45.3%; left: 54.0%;"><?php echo e($tpUpdate->regular_withdrawal_daily_count); ?></div>
-                <div class="overlay-field font-bold font-mono" style="top: 45.3%; left: 63.5%;"><?php echo e(!is_null($tpUpdate->regular_withdrawal_daily_amount) ? number_format($tpUpdate->regular_withdrawal_daily_amount) : ''); ?></div>
-                <div class="overlay-field font-bold font-mono" style="top: 45.3%; left: 74.0%;"><?php echo e($tpUpdate->regular_withdrawal_monthly_count); ?></div>
-                <div class="overlay-field font-bold font-mono" style="top: 45.3%; left: 83.5%;"><?php echo e(!is_null($tpUpdate->regular_withdrawal_monthly_amount) ? number_format($tpUpdate->regular_withdrawal_monthly_amount) : ''); ?></div>
+                <div class="overlay-field font-bold font-mono" style="top: 36.4%; left: 35.0%;"><?php echo e($tpUpdate->regular_withdrawal_daily_count); ?></div>
+                <div class="overlay-field font-bold font-mono" style="top: 36.4%; left: 47.5%;"><?php echo e(!is_null($tpUpdate->regular_withdrawal_daily_amount) ? number_format($tpUpdate->regular_withdrawal_daily_amount) : ''); ?></div>
+                <div class="overlay-field font-bold font-mono" style="top: 36.4%; left: 66.0%;"><?php echo e($tpUpdate->regular_withdrawal_monthly_count); ?></div>
+                <div class="overlay-field font-bold font-mono" style="top: 36.4%; left: 79.5%;"><?php echo e(!is_null($tpUpdate->regular_withdrawal_monthly_amount) ? number_format($tpUpdate->regular_withdrawal_monthly_amount) : ''); ?></div>
 
-                <div class="overlay-field font-bold font-mono" style="top: 48.2%; left: 54.0%;"><?php echo e($tpUpdate->regular_transfer_daily_count); ?></div>
-                <div class="overlay-field font-bold font-mono" style="top: 48.2%; left: 63.5%;"><?php echo e(!is_null($tpUpdate->regular_transfer_daily_amount) ? number_format($tpUpdate->regular_transfer_daily_amount) : ''); ?></div>
-                <div class="overlay-field font-bold font-mono" style="top: 48.2%; left: 74.0%;"><?php echo e($tpUpdate->regular_transfer_monthly_count); ?></div>
-                <div class="overlay-field font-bold font-mono" style="top: 48.2%; left: 83.5%;"><?php echo e(!is_null($tpUpdate->regular_transfer_monthly_amount) ? number_format($tpUpdate->regular_transfer_monthly_amount) : ''); ?></div>
+                <div class="overlay-field font-bold font-mono" style="top: 38.2%; left: 35.0%;"><?php echo e($tpUpdate->regular_transfer_daily_count); ?></div>
+                <div class="overlay-field font-bold font-mono" style="top: 38.2%; left: 47.5%;"><?php echo e(!is_null($tpUpdate->regular_transfer_daily_amount) ? number_format($tpUpdate->regular_transfer_daily_amount) : ''); ?></div>
+                <div class="overlay-field font-bold font-mono" style="top: 38.2%; left: 66.0%;"><?php echo e($tpUpdate->regular_transfer_monthly_count); ?></div>
+                <div class="overlay-field font-bold font-mono" style="top: 38.2%; left: 79.5%;"><?php echo e(!is_null($tpUpdate->regular_transfer_monthly_amount) ? number_format($tpUpdate->regular_transfer_monthly_amount) : ''); ?></div>
 
                 
                 <?php if($hasOneTime): ?>
-                    <div class="overlay-field font-bold text-lg" style="top: 51.8%; left: 40.4%;">✔</div>
+                    <div class="overlay-field font-bold text-lg" style="top: 40.6%; left: 9.9%;">✔</div>
                 <?php endif; ?>
 
                 
-                <div class="overlay-field font-bold font-mono" style="top: 61.6%; left: 54.0%;"><?php echo e($tpUpdate->one_time_cash_deposit_count); ?></div>
-                <div class="overlay-field font-bold font-mono" style="top: 61.6%; left: 63.5%;"><?php echo e(!is_null($tpUpdate->one_time_cash_deposit_amount) ? number_format($tpUpdate->one_time_cash_deposit_amount) : ''); ?></div>
-                <div class="overlay-field font-bold font-mono" style="top: 61.6%; left: 74.0%;"><?php echo e($tpUpdate->one_time_cash_deposit_monthly_count); ?></div>
-                <div class="overlay-field font-bold font-mono" style="top: 61.6%; left: 83.5%;"><?php echo e(!is_null($tpUpdate->one_time_cash_deposit_monthly_amount) ? number_format($tpUpdate->one_time_cash_deposit_monthly_amount) : ''); ?></div>
+                <div class="overlay-field font-bold font-mono" style="top: 45.8%; left: 35.0%;"><?php echo e($tpUpdate->one_time_cash_deposit_count); ?></div>
+                <div class="overlay-field font-bold font-mono" style="top: 45.8%; left: 47.5%;"><?php echo e(!is_null($tpUpdate->one_time_cash_deposit_amount) ? number_format($tpUpdate->one_time_cash_deposit_amount) : ''); ?></div>
+                <div class="overlay-field font-bold font-mono" style="top: 45.8%; left: 66.0%;"><?php echo e($tpUpdate->one_time_cash_deposit_monthly_count); ?></div>
+                <div class="overlay-field font-bold font-mono" style="top: 45.8%; left: 79.5%;"><?php echo e(!is_null($tpUpdate->one_time_cash_deposit_monthly_amount) ? number_format($tpUpdate->one_time_cash_deposit_monthly_amount) : ''); ?></div>
 
-                <div class="overlay-field font-bold font-mono" style="top: 64.5%; left: 54.0%;"><?php echo e($tpUpdate->one_time_cash_withdrawal_count); ?></div>
-                <div class="overlay-field font-bold font-mono" style="top: 64.5%; left: 63.5%;"><?php echo e(!is_null($tpUpdate->one_time_cash_withdrawal_amount) ? number_format($tpUpdate->one_time_cash_withdrawal_amount) : ''); ?></div>
-                <div class="overlay-field font-bold font-mono" style="top: 64.5%; left: 74.0%;"><?php echo e($tpUpdate->one_time_cash_withdrawal_monthly_count); ?></div>
-                <div class="overlay-field font-bold font-mono" style="top: 64.5%; left: 83.5%;"><?php echo e(!is_null($tpUpdate->one_time_cash_withdrawal_monthly_amount) ? number_format($tpUpdate->one_time_cash_withdrawal_monthly_amount) : ''); ?></div>
+                <div class="overlay-field font-bold font-mono" style="top: 47.7%; left: 35.0%;"><?php echo e($tpUpdate->one_time_cash_withdrawal_count); ?></div>
+                <div class="overlay-field font-bold font-mono" style="top: 47.7%; left: 47.5%;"><?php echo e(!is_null($tpUpdate->one_time_cash_withdrawal_amount) ? number_format($tpUpdate->one_time_cash_withdrawal_amount) : ''); ?></div>
+                <div class="overlay-field font-bold font-mono" style="top: 47.7%; left: 66.0%;"><?php echo e($tpUpdate->one_time_cash_withdrawal_monthly_count); ?></div>
+                <div class="overlay-field font-bold font-mono" style="top: 47.7%; left: 79.5%;"><?php echo e(!is_null($tpUpdate->one_time_cash_withdrawal_monthly_amount) ? number_format($tpUpdate->one_time_cash_withdrawal_monthly_amount) : ''); ?></div>
 
-                <div class="overlay-field font-bold font-mono" style="top: 67.4%; left: 54.0%;"><?php echo e($tpUpdate->one_time_transfer_count); ?></div>
-                <div class="overlay-field font-bold font-mono" style="top: 67.4%; left: 63.5%;"><?php echo e(!is_null($tpUpdate->one_time_transfer_amount) ? number_format($tpUpdate->one_time_transfer_amount) : ''); ?></div>
-                <div class="overlay-field font-bold font-mono" style="top: 67.4%; left: 74.0%;"><?php echo e($tpUpdate->one_time_transfer_monthly_count); ?></div>
-                <div class="overlay-field font-bold font-mono" style="top: 67.4%; left: 83.5%;"><?php echo e(!is_null($tpUpdate->one_time_transfer_monthly_amount) ? number_format($tpUpdate->one_time_transfer_monthly_amount) : ''); ?></div>
+                <div class="overlay-field font-bold font-mono" style="top: 49.5%; left: 35.0%;"><?php echo e($tpUpdate->one_time_transfer_count); ?></div>
+                <div class="overlay-field font-bold font-mono" style="top: 49.5%; left: 47.5%;"><?php echo e(!is_null($tpUpdate->one_time_transfer_amount) ? number_format($tpUpdate->one_time_transfer_amount) : ''); ?></div>
+                <div class="overlay-field font-bold font-mono" style="top: 49.5%; left: 66.0%;"><?php echo e($tpUpdate->one_time_transfer_monthly_count); ?></div>
+                <div class="overlay-field font-bold font-mono" style="top: 49.5%; left: 79.5%;"><?php echo e(!is_null($tpUpdate->one_time_transfer_monthly_amount) ? number_format($tpUpdate->one_time_transfer_monthly_amount) : ''); ?></div>
 
                 
-                <div class="overlay-field font-bold" style="top: 71.0%; left: 50.5%; width: 41.5%; font-size: 13px;">
+                <div class="overlay-field font-bold" style="top: 52.4%; left: 31.5%; width: 41.5%; font-size: 13px;">
                     <?php echo e($tpUpdate->source_of_funds); ?>
 
                 </div>
 
                 
-                <div class="overlay-field font-bold" style="top: 78.4%; left: 42.0%; font-size: 12px;">
+                <div class="overlay-field font-bold" style="top: 62.2%; left: 21.0%; font-size: 12px !important;">
                     <?php echo e($tpUpdate->account_name); ?>
 
                 </div>
-                <div class="overlay-field font-bold font-mono" style="top: 80.6%; left: 45.0%; font-size: 12px;">
+                <div class="overlay-field font-bold font-mono" style="top: 64%; left: 25.0%; font-size: 12px;">
                     <?php echo e($tpUpdate->client_mobile); ?>
 
                 </div>
 
                 
-                <div class="overlay-field font-bold" style="top: 86.8%; left: 21.0%; font-size: 12.5px;">
+                <div class="overlay-field font-bold" style="top: 76.7%; left: 23.0%; font-size: 12.5px;">
                     <?php echo e($tpUpdate->agent_name); ?>
 
                 </div>
-                <div class="overlay-field font-bold" style="top: 88.9%; left: 21.0%; font-size: 12.5px;">
+                <div class="overlay-field font-bold" style="top: 78.6%; left: 23.0%; font-size: 12.5px;">
                     <?php echo e(date('d / m / Y', strtotime($tpUpdate->date))); ?>
 
                 </div>
-                <div class="overlay-field font-bold" style="top: 90.9%; left: 21.0%; font-size: 12.5px;">
+                <div class="overlay-field font-bold" style="top: 80.3%; left: 23.0%; font-size: 12.5px;">
                     <?php echo e($tpUpdate->outlet_name_address); ?>
 
                 </div>
-                <div class="overlay-field font-bold font-mono" style="top: 92.8%; left: 21.0%; font-size: 12.5px;">
+                <div class="overlay-field font-bold font-mono" style="top: 82.4%; left: 23.0%; font-size: 12.5px;">
                     <?php echo e($tpUpdate->agent_mobile); ?>
 
                 </div>

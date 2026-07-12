@@ -702,100 +702,100 @@
         <div class="print-pdf-only" x-show="activeTab === 'pdf'">
             <div class="pdf-overlay-page tp-form {{ (!is_null($tpUpdate->animal_quantity) || !is_null($tpUpdate->total_amount)) ? 'page-break' : '' }}">
                 {{-- Date --}}
-                <div class="overlay-field font-bold font-mono" style="top: 10.5%; left: 78.5%;">
-                    {{ date('d / m / Y', strtotime($tpUpdate->date)) }}
+                <div class="overlay-field font-bold font-mono" style="top: 7.9%; left: 78.5%;">
+                    {{ date('d', strtotime($tpUpdate->date)) }}<span style="margin: 0 17px;">{{ date('m', strtotime($tpUpdate->date)) }}</span><span style="margin: 0px;">{{ date('Y', strtotime($tpUpdate->date)) }}</span>
                 </div>
 
                 {{-- Account Number --}}
-                <div class="overlay-field font-mono font-bold" style="top: 28.7%; left: 50.0%; font-size: 15px; letter-spacing: 2px;">
+                <div class="overlay-field font-mono font-bold" style="top: 22.6%; left: 28.0%; font-size: 15px; letter-spacing: 2px;">
                     {{ $tpUpdate->account_number }}
                 </div>
 
                 {{-- Account Name --}}
-                <div class="overlay-field font-bold" style="top: 31.8%; left: 50.0%; font-size: 14px;">
+                <div class="overlay-field font-bold" style="top: 25.3%; left: 28.0%; font-size: 14px;">
                     {{ $tpUpdate->account_name }}
                 </div>
 
                 {{-- Account Type Checkboxes --}}
                 @if($tpUpdate->account_type == 'Current Account')
-                    <div class="overlay-field font-bold text-lg" style="top: 34.9%; left: 49.8%;">✔</div>
+                    <div class="overlay-field font-bold text-lg" style="top:27.1%; left: 27.2%;">✔</div>
                 @endif
                 @if($tpUpdate->account_type == 'Savings Account')
-                    <div class="overlay-field font-bold text-lg" style="top: 34.9%; left: 59.0%;">✔</div>
+                    <div class="overlay-field font-bold text-lg" style="top: 27.1%; left: 43.8%;">✔</div>
                 @endif
                 @if($tpUpdate->account_type == 'SND Account')
-                    <div class="overlay-field font-bold text-lg" style="top: 34.9%; left: 69.3%;">✔</div>
+                    <div class="overlay-field font-bold text-lg" style="top: 27.1%; left: 62.3%;">✔</div>
                 @endif
                 @if($tpUpdate->account_type == 'Other')
-                    <div class="overlay-field font-bold text-lg" style="top: 34.9%; left: 80.6%;">✔</div>
+                    <div class="overlay-field font-bold text-lg" style="top: 27.1%; left: 82.7%;">✔</div>
                 @endif
 
                 {{-- Regular Tx Checkbox --}}
                 @if($hasRegular)
-                    <div class="overlay-field font-bold text-lg" style="top: 37.8%; left: 32.4%;">✔</div>
+                    <div class="overlay-field font-bold text-lg" style="top: 29.4%; left: 9.9%;">✔</div>
                 @endif
 
                 {{-- Regular Tx Table --}}
-                <div class="overlay-field font-bold font-mono" style="top: 45.2%; left: 54.0%;">{{ $tpUpdate->regular_daily_tx_count }}</div>
-                <div class="overlay-field font-bold font-mono" style="top: 45.2%; left: 63.5%;">{{ !is_null($tpUpdate->regular_daily_tx_amount) ? number_format($tpUpdate->regular_daily_tx_amount) : '' }}</div>
-                <div class="overlay-field font-bold font-mono" style="top: 45.2%; left: 74.0%;">{{ $tpUpdate->regular_monthly_tx_count }}</div>
-                <div class="overlay-field font-bold font-mono" style="top: 45.2%; left: 83.5%;">{{ !is_null($tpUpdate->regular_monthly_tx_amount) ? number_format($tpUpdate->regular_monthly_tx_amount) : '' }}</div>
+                <div class="overlay-field font-bold font-mono" style="top: 34.5%; left: 35.0%;">{{ $tpUpdate->regular_daily_tx_count }}</div>
+                <div class="overlay-field font-bold font-mono" style="top: 34.5%; left: 47.5%;">{{ !is_null($tpUpdate->regular_daily_tx_amount) ? number_format($tpUpdate->regular_daily_tx_amount) : '' }}</div>
+                <div class="overlay-field font-bold font-mono" style="top: 34.5%; left: 66.0%;">{{ $tpUpdate->regular_monthly_tx_count }}</div>
+                <div class="overlay-field font-bold font-mono" style="top: 34.5%; left: 79.5%;">{{ !is_null($tpUpdate->regular_monthly_tx_amount) ? number_format($tpUpdate->regular_monthly_tx_amount) : '' }}</div>
 
-                <div class="overlay-field font-bold font-mono" style="top: 47.9%; left: 54.0%;">{{ $tpUpdate->regular_withdrawal_daily_count }}</div>
-                <div class="overlay-field font-bold font-mono" style="top: 47.9%; left: 63.5%;">{{ !is_null($tpUpdate->regular_withdrawal_daily_amount) ? number_format($tpUpdate->regular_withdrawal_daily_amount) : '' }}</div>
-                <div class="overlay-field font-bold font-mono" style="top: 47.9%; left: 74.0%;">{{ $tpUpdate->regular_withdrawal_monthly_count }}</div>
-                <div class="overlay-field font-bold font-mono" style="top: 47.9%; left: 83.5%;">{{ !is_null($tpUpdate->regular_withdrawal_monthly_amount) ? number_format($tpUpdate->regular_withdrawal_monthly_amount) : '' }}</div>
+                <div class="overlay-field font-bold font-mono" style="top: 36.4%; left: 35.0%;">{{ $tpUpdate->regular_withdrawal_daily_count }}</div>
+                <div class="overlay-field font-bold font-mono" style="top: 36.4%; left: 47.5%;">{{ !is_null($tpUpdate->regular_withdrawal_daily_amount) ? number_format($tpUpdate->regular_withdrawal_daily_amount) : '' }}</div>
+                <div class="overlay-field font-bold font-mono" style="top: 36.4%; left: 66.0%;">{{ $tpUpdate->regular_withdrawal_monthly_count }}</div>
+                <div class="overlay-field font-bold font-mono" style="top: 36.4%; left: 79.5%;">{{ !is_null($tpUpdate->regular_withdrawal_monthly_amount) ? number_format($tpUpdate->regular_withdrawal_monthly_amount) : '' }}</div>
 
-                <div class="overlay-field font-bold font-mono" style="top: 50.5%; left: 54.0%;">{{ $tpUpdate->regular_transfer_daily_count }}</div>
-                <div class="overlay-field font-bold font-mono" style="top: 50.5%; left: 63.5%;">{{ !is_null($tpUpdate->regular_transfer_daily_amount) ? number_format($tpUpdate->regular_transfer_daily_amount) : '' }}</div>
-                <div class="overlay-field font-bold font-mono" style="top: 50.5%; left: 74.0%;">{{ $tpUpdate->regular_transfer_monthly_count }}</div>
-                <div class="overlay-field font-bold font-mono" style="top: 50.5%; left: 83.5%;">{{ !is_null($tpUpdate->regular_transfer_monthly_amount) ? number_format($tpUpdate->regular_transfer_monthly_amount) : '' }}</div>
+                <div class="overlay-field font-bold font-mono" style="top: 38.2%; left: 35.0%;">{{ $tpUpdate->regular_transfer_daily_count }}</div>
+                <div class="overlay-field font-bold font-mono" style="top: 38.2%; left: 47.5%;">{{ !is_null($tpUpdate->regular_transfer_daily_amount) ? number_format($tpUpdate->regular_transfer_daily_amount) : '' }}</div>
+                <div class="overlay-field font-bold font-mono" style="top: 38.2%; left: 66.0%;">{{ $tpUpdate->regular_transfer_monthly_count }}</div>
+                <div class="overlay-field font-bold font-mono" style="top: 38.2%; left: 79.5%;">{{ !is_null($tpUpdate->regular_transfer_monthly_amount) ? number_format($tpUpdate->regular_transfer_monthly_amount) : '' }}</div>
 
                 {{-- One-Time Tx Checkbox --}}
                 @if($hasOneTime)
-                    <div class="overlay-field font-bold text-lg" style="top: 52.9%; left: 32.4%;">✔</div>
+                    <div class="overlay-field font-bold text-lg" style="top: 40.6%; left: 9.9%;">✔</div>
                 @endif
 
                 {{-- One-Time Tx Table --}}
-                <div class="overlay-field font-bold font-mono" style="top: 60.5%; left: 54.0%;">{{ $tpUpdate->one_time_cash_deposit_count }}</div>
-                <div class="overlay-field font-bold font-mono" style="top: 60.5%; left: 63.5%;">{{ !is_null($tpUpdate->one_time_cash_deposit_amount) ? number_format($tpUpdate->one_time_cash_deposit_amount) : '' }}</div>
-                <div class="overlay-field font-bold font-mono" style="top: 60.5%; left: 74.0%;">{{ $tpUpdate->one_time_cash_deposit_monthly_count }}</div>
-                <div class="overlay-field font-bold font-mono" style="top: 60.5%; left: 83.5%;">{{ !is_null($tpUpdate->one_time_cash_deposit_monthly_amount) ? number_format($tpUpdate->one_time_cash_deposit_monthly_amount) : '' }}</div>
+                <div class="overlay-field font-bold font-mono" style="top: 45.8%; left: 35.0%;">{{ $tpUpdate->one_time_cash_deposit_count }}</div>
+                <div class="overlay-field font-bold font-mono" style="top: 45.8%; left: 47.5%;">{{ !is_null($tpUpdate->one_time_cash_deposit_amount) ? number_format($tpUpdate->one_time_cash_deposit_amount) : '' }}</div>
+                <div class="overlay-field font-bold font-mono" style="top: 45.8%; left: 66.0%;">{{ $tpUpdate->one_time_cash_deposit_monthly_count }}</div>
+                <div class="overlay-field font-bold font-mono" style="top: 45.8%; left: 79.5%;">{{ !is_null($tpUpdate->one_time_cash_deposit_monthly_amount) ? number_format($tpUpdate->one_time_cash_deposit_monthly_amount) : '' }}</div>
 
-                <div class="overlay-field font-bold font-mono" style="top: 63.1%; left: 54.0%;">{{ $tpUpdate->one_time_cash_withdrawal_count }}</div>
-                <div class="overlay-field font-bold font-mono" style="top: 63.1%; left: 63.5%;">{{ !is_null($tpUpdate->one_time_cash_withdrawal_amount) ? number_format($tpUpdate->one_time_cash_withdrawal_amount) : '' }}</div>
-                <div class="overlay-field font-bold font-mono" style="top: 63.1%; left: 74.0%;">{{ $tpUpdate->one_time_cash_withdrawal_monthly_count }}</div>
-                <div class="overlay-field font-bold font-mono" style="top: 63.1%; left: 83.5%;">{{ !is_null($tpUpdate->one_time_cash_withdrawal_monthly_amount) ? number_format($tpUpdate->one_time_cash_withdrawal_monthly_amount) : '' }}</div>
+                <div class="overlay-field font-bold font-mono" style="top: 47.7%; left: 35.0%;">{{ $tpUpdate->one_time_cash_withdrawal_count }}</div>
+                <div class="overlay-field font-bold font-mono" style="top: 47.7%; left: 47.5%;">{{ !is_null($tpUpdate->one_time_cash_withdrawal_amount) ? number_format($tpUpdate->one_time_cash_withdrawal_amount) : '' }}</div>
+                <div class="overlay-field font-bold font-mono" style="top: 47.7%; left: 66.0%;">{{ $tpUpdate->one_time_cash_withdrawal_monthly_count }}</div>
+                <div class="overlay-field font-bold font-mono" style="top: 47.7%; left: 79.5%;">{{ !is_null($tpUpdate->one_time_cash_withdrawal_monthly_amount) ? number_format($tpUpdate->one_time_cash_withdrawal_monthly_amount) : '' }}</div>
 
-                <div class="overlay-field font-bold font-mono" style="top: 65.8%; left: 54.0%;">{{ $tpUpdate->one_time_transfer_count }}</div>
-                <div class="overlay-field font-bold font-mono" style="top: 65.8%; left: 63.5%;">{{ !is_null($tpUpdate->one_time_transfer_amount) ? number_format($tpUpdate->one_time_transfer_amount) : '' }}</div>
-                <div class="overlay-field font-bold font-mono" style="top: 65.8%; left: 74.0%;">{{ $tpUpdate->one_time_transfer_monthly_count }}</div>
-                <div class="overlay-field font-bold font-mono" style="top: 65.8%; left: 83.5%;">{{ !is_null($tpUpdate->one_time_transfer_monthly_amount) ? number_format($tpUpdate->one_time_transfer_monthly_amount) : '' }}</div>
+                <div class="overlay-field font-bold font-mono" style="top: 49.5%; left: 35.0%;">{{ $tpUpdate->one_time_transfer_count }}</div>
+                <div class="overlay-field font-bold font-mono" style="top: 49.5%; left: 47.5%;">{{ !is_null($tpUpdate->one_time_transfer_amount) ? number_format($tpUpdate->one_time_transfer_amount) : '' }}</div>
+                <div class="overlay-field font-bold font-mono" style="top: 49.5%; left: 66.0%;">{{ $tpUpdate->one_time_transfer_monthly_count }}</div>
+                <div class="overlay-field font-bold font-mono" style="top: 49.5%; left: 79.5%;">{{ !is_null($tpUpdate->one_time_transfer_monthly_amount) ? number_format($tpUpdate->one_time_transfer_monthly_amount) : '' }}</div>
 
                 {{-- Source of Funds --}}
-                <div class="overlay-field font-bold" style="top: 69.2%; left: 50.5%; width: 41.5%; font-size: 13px;">
+                <div class="overlay-field font-bold" style="top: 52.4%; left: 31.5%; width: 41.5%; font-size: 13px;">
                     {{ $tpUpdate->source_of_funds }}
                 </div>
 
                 {{-- Client Info --}}
-                <div class="overlay-field font-bold" style="top: 78.3%; left: 42.0%; font-size: 12px;">
+                <div class="overlay-field font-bold" style="top: 62.2%; left: 21.0%; font-size: 12px !important;">
                     {{ $tpUpdate->account_name }}
                 </div>
-                <div class="overlay-field font-bold font-mono" style="top: 80.5%; left: 45.0%; font-size: 12px;">
+                <div class="overlay-field font-bold font-mono" style="top: 64%; left: 25.0%; font-size: 12px;">
                     {{ $tpUpdate->client_mobile }}
                 </div>
 
                 {{-- Agent Details --}}
-                <div class="overlay-field font-bold" style="top: 86.5%; left: 21.0%; font-size: 12.5px;">
+                <div class="overlay-field font-bold" style="top: 76.7%; left: 23.0%; font-size: 12.5px;">
                     {{ $tpUpdate->agent_name }}
                 </div>
-                <div class="overlay-field font-bold" style="top: 88.7%; left: 21.0%; font-size: 12.5px;">
+                <div class="overlay-field font-bold" style="top: 78.6%; left: 23.0%; font-size: 12.5px;">
                     {{ date('d / m / Y', strtotime($tpUpdate->date)) }}
                 </div>
-                <div class="overlay-field font-bold" style="top: 90.7%; left: 21.0%; font-size: 12.5px;">
+                <div class="overlay-field font-bold" style="top: 80.3%; left: 23.0%; font-size: 12.5px;">
                     {{ $tpUpdate->outlet_name_address }}
                 </div>
-                <div class="overlay-field font-bold font-mono" style="top: 92.7%; left: 21.0%; font-size: 12.5px;">
+                <div class="overlay-field font-bold font-mono" style="top: 82.4%; left: 23.0%; font-size: 12.5px;">
                     {{ $tpUpdate->agent_mobile }}
                 </div>
             </div>

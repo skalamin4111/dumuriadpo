@@ -111,7 +111,7 @@ unset($__defined_vars, $__key, $__value); ?>
 
             <section class="p-4 sm:p-6 lg:p-8">
                 <?php if(session('status')): ?>
-                    <div class="mb-4 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800 dark:border-emerald-900 dark:bg-emerald-950 dark:text-emerald-200"><?php echo e(session('status')); ?></div>
+                    <div class="mb-4 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800 dark:border-emerald-900 dark:bg-emerald-950 dark:text-emerald-200 no-print"><?php echo e(session('status')); ?></div>
                 <?php endif; ?>
                 <?php echo e($slot); ?>
 
