@@ -15,6 +15,9 @@ class ComputerTrainingAttendance extends Model
     public function getTodayMarkAttribute(): int
     {
         if ($this->status === 'absent') {
+            if ($this->is_advance_absence) {
+                return 0;
+            }
             return -2;
         }
         if ($this->status === 'late') {
@@ -43,6 +46,7 @@ class ComputerTrainingAttendance extends Model
         'status',
         'daily_rank',
         'remarks',
+        'is_advance_absence',
     ];
 
     protected function casts(): array

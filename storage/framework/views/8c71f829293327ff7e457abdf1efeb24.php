@@ -933,6 +933,9 @@
             loading: false,
             editAttendance: null,
             viewStudentAttendance: null,
+            advanceAbsenceStudent: null,
+            advanceAbsenceDate: '<?php echo e(now()->addDay()->toDateString()); ?>',
+            advanceAbsenceNotes: '',
             
             fetchStudents() {
                 if(!this.selectedBatchId) {
@@ -954,10 +957,17 @@
                             prev_status: s.prev_status,
                             present_count: s.present_count || 0,
                             absent_count: s.absent_count || 0,
-                            total_marks: s.total_marks || 0
+                            total_marks: s.total_marks || 0,
+                            has_advance_absence: s.has_advance_absence || false,
+                            advance_absence_note: s.advance_absence_note || ''
                         }));
                         this.loading = false;
                     });
+            },
+            openAdvanceAbsence(student) {
+                this.advanceAbsenceStudent = student;
+                this.advanceAbsenceDate = '<?php echo e(now()->addDay()->toDateString()); ?>';
+                this.advanceAbsenceNotes = '';
             }
         }">
             
@@ -1072,6 +1082,11 @@
                                                                             Prev: N/A
                                                                         </span>
                                                                     </template>
+                                                                    <template x-if="s.has_advance_absence">
+                                                                        <span class="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400 font-medium text-[10px]" title="Pre-informed absence">
+                                                                            Pre-informed: <span x-text="s.advance_absence_note || 'No note'"></span>
+                                                                        </span>
+                                                                    </template>
                                                                     <span class="text-slate-300 dark:text-slate-700">|</span>
                                                                     <!-- Total Present / Absent -->
                                                                     <span class="text-[10px]">
@@ -1099,6 +1114,12 @@
                                                         </label>
                                                     </td>
                                                     <td class="px-4 py-3">
+                                                        <template x-if="s.has_advance_absence">
+                                                            <div class="mb-2 p-2 bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/30 rounded-lg text-center">
+                                                                <div class="text-[10px] font-bold text-amber-700 dark:text-amber-300 uppercase tracking-wider">Pre-informed Absence</div>
+                                                                <div class="text-xs font-medium text-amber-600 dark:text-amber-400 mt-0.5" x-text="s.advance_absence_note || 'No note'"></div>
+                                                            </div>
+                                                        </template>
                                                         <template x-if="s.status === 'present'">
                                                             <select :name="`attendances[${index}][daily_rank]`" x-model="s.daily_rank" class="bg-slate-50 border border-slate-300 text-slate-900 text-sm rounded-lg focus:ring-amber-500 focus:border-amber-500 block w-full p-2 dark:bg-slate-700 dark:border-slate-600 dark:placeholder-slate-400 dark:text-white dark:focus:ring-amber-500 dark:focus:border-amber-500">
                                                                 <option value="">None</option>
@@ -1113,6 +1134,12 @@
                                                         <template x-if="!s.status">
                                                             <div class="text-center text-xs text-slate-400 dark:text-slate-500 italic py-2">Select status first</div>
                                                         </template>
+                                                        <div class="mt-2 text-center">
+                                                            <button type="button" @click="openAdvanceAbsence(s)" class="inline-flex items-center gap-1 text-[10px] font-medium text-amber-600 dark:text-amber-400 hover:text-amber-700 dark:hover:text-amber-300 bg-amber-50 dark:bg-amber-500/10 hover:bg-amber-100 dark:hover:bg-amber-500/20 px-2 py-1 rounded-md transition-colors border border-amber-200 dark:border-amber-500/30">
+                                                                <svg class="size-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                                                                Pre-absence
+                                                            </button>
+                                                        </div>
                                                     </td>
                                                 </tr>
                                             </template>
@@ -1129,6 +1156,52 @@
                     </div>
                                 </div>
                             </template>
+
+            <!-- Advance Absence Modal -->
+            <template x-teleport="body">
+                <div x-show="advanceAbsenceStudent !== null" 
+                     class="fixed inset-0 z-[110] overflow-y-auto bg-slate-950/60 backdrop-blur-sm flex items-start justify-center p-4 sm:p-6 md:py-12" 
+                     style="display:none"
+                     x-transition.opacity>
+                    <div class="w-full max-w-md bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 relative flex flex-col" @click.self="advanceAbsenceStudent = null">
+                        <form method="POST" action="<?php echo e(route('computer-training.advance-absence.store')); ?>" class="flex flex-col">
+                            <?php echo csrf_field(); ?>
+                            <input type="hidden" name="student_id" :value="advanceAbsenceStudent?.student_id">
+                            
+                            <div class="p-6 border-b border-slate-200 dark:border-slate-800 flex justify-between items-center bg-slate-50 dark:bg-slate-800/50 rounded-t-2xl shrink-0">
+                                <h2 class="font-bold text-lg text-slate-800 dark:text-slate-200">Advance Absence Notice</h2>
+                                <button type="button" @click="advanceAbsenceStudent = null" class="text-slate-400 hover:text-slate-600 transition bg-white dark:bg-slate-800 rounded-full p-2 shadow-sm border border-slate-200 dark:border-slate-700">
+                                    <svg class="size-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                                </button>
+                            </div>
+
+                            <div class="p-6 space-y-4">
+                                <div>
+                                    <span class="text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Student</span>
+                                    <p class="text-base font-semibold text-slate-800 dark:text-slate-200 mt-0.5" x-text="advanceAbsenceStudent?.name || ''"></p>
+                                </div>
+                                <div class="space-y-2">
+                                    <label class="text-sm font-medium text-slate-700 dark:text-slate-300 block">Absence Date</label>
+                                    <input type="date" class="field" name="absence_date" x-model="advanceAbsenceDate" required>
+                                </div>
+                                <div class="space-y-2">
+                                    <label class="text-sm font-medium text-slate-700 dark:text-slate-300 block">Reason / Note</label>
+                                    <input type="text" class="field" name="notes" x-model="advanceAbsenceNotes" placeholder="Why will they be absent?" maxlength="255">
+                                </div>
+                                <p class="text-xs text-slate-500 dark:text-slate-400 italic">
+                                    <svg class="size-4 inline-block mr-1 text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                                    On the marked date, this student's marks won't decrease if marked absent.
+                                </p>
+                            </div>
+
+                            <div class="p-6 border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50 flex justify-end gap-3 rounded-b-2xl">
+                                <button type="button" @click="advanceAbsenceStudent = null" class="btn bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700">Cancel</button>
+                                <button type="submit" class="btn btn-primary px-6">Save Notice</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </template>
 
             <!-- Edit Attendance Modal -->
             <template x-teleport="body">
@@ -1207,6 +1280,24 @@
                                     <label class="text-sm font-medium text-slate-700 dark:text-slate-300 block">Reason / Note for Absence</label>
                                     <input type="text" name="remarks" x-model="editAttendance.remarks" placeholder="Enter reason (e.g., Sick, Travel)..." class="bg-slate-50 border border-slate-300 text-slate-900 text-sm rounded-lg focus:ring-rose-500 focus:border-rose-500 block w-full p-2.5 dark:bg-slate-700 dark:border-slate-600 dark:placeholder-slate-400 dark:text-white dark:focus:ring-rose-500 dark:focus:border-rose-500">
                                 </div>
+
+                                <div class="space-y-2" x-show="editAttendance.status === 'absent'">
+                                    <label class="relative inline-flex items-center cursor-pointer">
+                                        <input type="checkbox" name="is_advance_absence" value="1" x-model="editAttendance.is_advance_absence" class="sr-only peer">
+                                        <div class="w-9 h-5 bg-slate-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-amber-300 dark:peer-focus:ring-amber-800 rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all dark:border-slate-600 peer-checked:bg-amber-500"></div>
+                                        <span class="ms-3 text-sm font-medium text-slate-700 dark:text-slate-300">
+                                            Pre-informed absence
+                                            <span class="text-xs text-slate-400 dark:text-slate-500 italic">(marks won't be deducted)</span>
+                                        </span>
+                                    </label>
+                                </div>
+
+                                <div class="pt-4 border-t border-slate-100 dark:border-slate-800">
+                                    <button type="button" @click="openAdvanceAbsence({ student_id: editAttendance?.student_id, name: editAttendance?.student?.name })" class="w-full inline-flex items-center justify-center gap-1.5 text-xs font-medium text-amber-600 dark:text-amber-400 hover:text-amber-700 dark:hover:text-amber-300 bg-amber-50 dark:bg-amber-500/10 hover:bg-amber-100 dark:hover:bg-amber-500/20 px-3 py-2 rounded-lg transition-colors border border-amber-200 dark:border-amber-500/30">
+                                        <svg class="size-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                                        Mark as Pre-absence for future class
+                                    </button>
+                                </div>
                             </div>
 
                             <div class="p-6 border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50 flex justify-end gap-3 rounded-b-2xl">
@@ -1274,6 +1365,11 @@
                                             <template x-if="viewStudentAttendance?.daily_rank">
                                                 <span class="inline-flex items-center gap-0.5 text-xs font-bold bg-amber-100 text-amber-700 dark:bg-amber-500/10 dark:text-amber-400 px-2 py-0.5 rounded-full">
                                                     🏆 Rank <span x-text="viewStudentAttendance?.daily_rank"></span>
+                                                </span>
+                                            </template>
+                                            <template x-if="viewStudentAttendance?.is_advance_absence">
+                                                <span class="inline-flex items-center gap-0.5 text-xs font-bold bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400 px-2 py-0.5 rounded-full border border-amber-200 dark:border-amber-500/30">
+                                                    Pre-informed
                                                 </span>
                                             </template>
                                         </div>
@@ -1417,6 +1513,7 @@
                                  daily_rank: '<?php echo e($attendance->daily_rank ?? ''); ?>',
                                  today_mark: <?php echo e($attendance->today_mark ?? 0); ?>,
                                  remarks: '<?php echo e(addslashes($attendance->remarks ?? '')); ?>',
+                                 is_advance_absence: <?php echo e($attendance->is_advance_absence ? 'true' : 'false'); ?>,
                                  student: {
                                      name: '<?php echo e(addslashes($attendance->student?->name ?? 'N/A')); ?>',
                                      student_id: '<?php echo e($attendance->student?->student_id ?? 'N/A'); ?>',
@@ -1478,6 +1575,14 @@
                                         </span>
                                     </div>
                                 <?php endif; ?>
+                                <?php if($attendance->is_advance_absence): ?>
+                                    <div class="mt-2 flex">
+                                        <span class="inline-flex items-center gap-1.5 text-xs font-semibold text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-500/10 px-2.5 py-1 rounded-md border border-amber-100 dark:border-amber-950/30 shadow-sm">
+                                            <svg class="size-4 shrink-0 text-amber-500 dark:text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                                            Pre-informed absence — marks not deducted
+                                        </span>
+                                    </div>
+                                <?php endif; ?>
                             </div>
                         </div>
 
@@ -1507,6 +1612,8 @@
                                     status: '<?php echo e($attendance->status); ?>',
                                     daily_rank: '<?php echo e($attendance->daily_rank ?? ''); ?>',
                                     remarks: '<?php echo e(addslashes($attendance->remarks ?? '')); ?>',
+                                    is_advance_absence: <?php echo e($attendance->is_advance_absence ? 'true' : 'false'); ?>,
+                                    student_id: <?php echo e($attendance->student_id); ?>,
                                     student: {
                                         name: '<?php echo e(addslashes($attendance->student?->name ?? 'N/A')); ?>',
                                         batch: {

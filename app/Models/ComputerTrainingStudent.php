@@ -37,9 +37,13 @@ class ComputerTrainingStudent extends Model
             $r1 = $this->rank_1_count;
             $r2 = $this->rank_2_count;
             $r3 = $this->rank_3_count;
+
+            if (array_key_exists('advance_absence_count', $this->attributes)) {
+                $a -= $this->advance_absence_count;
+            }
         } else {
             $p = $this->attendances()->where('status', 'present')->count();
-            $a = $this->attendances()->where('status', 'absent')->count();
+            $a = $this->attendances()->where('status', 'absent')->where('is_advance_absence', false)->count();
             $l = $this->attendances()->where('status', 'late')->count();
             $r1 = $this->attendances()->where('daily_rank', 1)->count();
             $r2 = $this->attendances()->where('daily_rank', 2)->count();
@@ -102,5 +106,10 @@ class ComputerTrainingStudent extends Model
     public function batch()
     {
         return $this->belongsTo(ComputerTrainingBatch::class, 'batch_id');
+    }
+
+    public function advanceAbsences()
+    {
+        return $this->hasMany(ComputerTrainingAdvanceAbsence::class, 'student_id');
     }
 }

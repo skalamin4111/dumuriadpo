@@ -208,46 +208,88 @@
             border: 1px solid #000;
             padding: 8px;
         }
+
+        /* Enlarged Cropper.js handles for easy touch selection */
+        .cropper-point {
+            background-color: #14b8a6 !important; /* Matches teal-500 theme */
+            opacity: 0.9 !important;
+        }
+        
+        .cropper-point.point-se,
+        .cropper-point.point-sw,
+        .cropper-point.point-nw,
+        .cropper-point.point-ne {
+            width: 32px !important;
+            height: 32px !important;
+            border-radius: 4px;
+        }
+
+        .cropper-point.point-se {
+            right: -16px !important;
+            bottom: -16px !important;
+        }
+        .cropper-point.point-sw {
+            left: -16px !important;
+            bottom: -16px !important;
+        }
+        .cropper-point.point-nw {
+            left: -16px !important;
+            top: -16px !important;
+        }
+        .cropper-point.point-ne {
+            right: -16px !important;
+            top: -16px !important;
+        }
+
+        /* Hide edge points on mobile to avoid clutter */
+        @media (max-width: 640px) {
+            .cropper-point.point-n,
+            .cropper-point.point-s,
+            .cropper-point.point-e,
+            .cropper-point.point-w {
+                display: none !important;
+            }
+        }
     </style>
 
     <div x-data="tpDocumentUpload({{ $expectedPages }})">
-        <div class="mb-6 flex items-center justify-between no-print">
-            <div class="flex items-center gap-3">
-                <a href="{{ route('bank-asia.tp-updates.index') }}" class="btn btn-muted flex items-center gap-2">
+        <div class="mb-6 flex flex-col xl:flex-row items-start xl:items-center justify-between gap-4 no-print">
+            <div class="flex flex-wrap items-center gap-3 w-full xl:w-auto">
+                <a href="{{ route('bank-asia.tp-updates.index') }}" class="btn btn-muted flex items-center gap-2 shrink-0">
                     <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
                     Back to List
                 </a>
                 
                 {{-- Mode Switcher tabs --}}
-                <div class="inline-flex rounded-lg p-1 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
-                    <button @click="activeTab = 'pdf'" :class="activeTab === 'pdf' ? 'bg-white dark:bg-slate-900 shadow-sm text-indigo-600 dark:text-indigo-400 font-semibold' : 'text-slate-600 dark:text-slate-400'" class="px-4 py-1.5 text-xs rounded-md transition duration-200">
+                <div class="inline-flex rounded-lg p-1 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 max-w-full overflow-x-auto hide-scrollbar">
+                    <button @click="activeTab = 'pdf'" :class="activeTab === 'pdf' ? 'bg-white dark:bg-slate-900 shadow-sm text-indigo-600 dark:text-indigo-400 font-semibold' : 'text-slate-600 dark:text-slate-400'" class="px-3 sm:px-4 py-1.5 text-xs rounded-md transition duration-200 whitespace-nowrap shrink-0">
                         পিডিএফ ফিল্ড ভিউ (PDF Overlay)
                     </button>
-                    <button @click="activeTab = 'digital'" :class="activeTab === 'digital' ? 'bg-white dark:bg-slate-900 shadow-sm text-indigo-600 dark:text-indigo-400 font-semibold' : 'text-slate-600 dark:text-slate-400'" class="px-4 py-1.5 text-xs rounded-md transition duration-200">
+                    <button @click="activeTab = 'digital'" :class="activeTab === 'digital' ? 'bg-white dark:bg-slate-900 shadow-sm text-indigo-600 dark:text-indigo-400 font-semibold' : 'text-slate-600 dark:text-slate-400'" class="px-3 sm:px-4 py-1.5 text-xs rounded-md transition duration-200 whitespace-nowrap shrink-0">
                         ডিজিটাল প্রিন্ট ভিউ (HTML Design)
                     </button>
                 </div>
             </div>
-            <div class="flex gap-3">
-                <a href="{{ route('bank-asia.tp-updates.edit', $tpUpdate) }}" class="btn btn-muted flex items-center gap-2">
+            <div class="flex flex-wrap items-center gap-2 sm:gap-3 w-full xl:w-auto">
+                <a href="{{ route('bank-asia.tp-updates.edit', $tpUpdate) }}" class="btn btn-muted flex items-center gap-2 shrink-0">
                     <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 1 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
                     Edit
                 </a>
-                <button onclick="window.print()" class="btn btn-primary bg-indigo-600 hover:bg-indigo-700 text-white border-transparent flex items-center gap-2">
+                <button onclick="window.print()" class="btn btn-primary bg-indigo-600 hover:bg-indigo-700 text-white border-transparent flex items-center gap-2 shrink-0">
                     <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <polyline points="6 9 6 2 18 2 18 9"></polyline>
                         <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
                         <rect x="6" y="14" width="12" height="8"></rect>
                     </svg>
-                    Print Document
+                    Print
                 </button>
-                <button @click="$refs.fileInput.click()" class="btn btn-primary bg-teal-600 hover:bg-teal-700 text-white border-transparent flex items-center gap-2">
+                <button @click="$refs.fileInput.click()" class="btn btn-primary bg-teal-600 hover:bg-teal-700 text-white border-transparent flex items-center gap-2 shrink-0">
                     <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
                         <polyline points="17 8 12 3 7 8"></polyline>
                         <line x1="12" y1="3" x2="12" y2="15"></line>
                     </svg>
-                    Upload Signed Doc
+                    Upload Doc
                 </button>
                 <input type="file" x-ref="fileInput" @change="handleFile" accept="image/*" class="hidden" capture="environment">
             </div>
@@ -264,7 +306,33 @@
                 </div>
                 <!-- Bottom Action Bar -->
                 <div class="relative bg-slate-800 p-3 sm:p-4 shrink-0 shadow-[0_-10px_40px_rgba(0,0,0,0.3)] flex flex-wrap sm:flex-nowrap items-center justify-between gap-3 border-t border-slate-700/80 z-10 w-full" style="padding-bottom: calc(12px + env(safe-area-inset-bottom));">
-                    
+                    <!-- Eraser Settings Snackbar -->
+                    <div x-show="isErasing" 
+                         x-transition:enter="transition ease-out duration-200"
+                         x-transition:enter-start="opacity-0 translate-y-4"
+                         x-transition:enter-end="opacity-100 translate-y-0"
+                         x-transition:leave="transition ease-in duration-150"
+                         x-transition:leave-start="opacity-100 translate-y-0"
+                         x-transition:leave-end="opacity-0 translate-y-4"
+                         class="absolute bottom-[calc(100%+12px)] right-3 sm:right-4 w-64 bg-slate-800/95 backdrop-blur-md rounded-xl shadow-[0_10px_40px_rgba(0,0,0,0.5)] border border-slate-600 p-4 z-20" style="display: none;">
+                        <div class="flex items-center justify-between mb-2">
+                            <h3 class="text-slate-200 text-sm font-semibold flex items-center gap-2">
+                                <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m7 21-4.3-4.3c-1-1-1-2.5 0-3.4l9.6-9.6c1-1 2.5-1 3.4 0l5.6 5.6c1 1 1 2.5 0 3.4L13 21"/><path d="M22 21H7"/><path d="m5 11 9 9"/></svg>
+                                Eraser Size
+                            </h3>
+                            <button @click="toggleEraseMode()" class="text-slate-400 hover:text-white transition-colors">
+                                <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                            </button>
+                        </div>
+                        <div>
+                            <div class="flex justify-between text-xs font-medium text-slate-300 mb-1.5">
+                                <span>Brush Size</span>
+                                <span x-text="eraserSize + 'px'"></span>
+                            </div>
+                            <input type="range" x-model="eraserSize" min="5" max="100" class="w-full h-1.5 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-pink-500">
+                        </div>
+                    </div>
+
                     <!-- Adjustments Snackbar / Bottom Sheet -->
                     <div x-show="showAdjustments" 
                          x-transition:enter="transition ease-out duration-200"
@@ -340,8 +408,11 @@
                                     <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
                                 </div>
                             </div>
-                            <button @click="showAdjustments = !showAdjustments" class="p-1.5 sm:p-2 bg-slate-700 text-white border border-slate-600 rounded-lg hover:bg-slate-600 transition-colors" title="Manual Adjustments" :class="showAdjustments ? 'bg-teal-600 border-teal-500' : ''">
+                            <button @click="showAdjustments = !showAdjustments; if(showAdjustments) { isErasing = false; if(pendingRotation) { cropper.rotateTo(pendingRotation); pendingRotation = 0; } }" class="p-1.5 sm:p-2 bg-slate-700 text-white border border-slate-600 rounded-lg hover:bg-slate-600 transition-colors" title="Manual Adjustments" :class="showAdjustments ? 'bg-teal-600 border-teal-500' : ''">
                                 <svg class="size-4 sm:size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20V10M18 20V4M6 20v-4M6 12V4M12 6V4M18 16v-4"/></svg>
+                            </button>
+                            <button @click="toggleEraseMode()" class="p-1.5 sm:p-2 bg-slate-700 text-white border border-slate-600 rounded-lg hover:bg-slate-600 transition-colors" title="Eraser Tool" :class="isErasing ? 'bg-pink-600 border-pink-500' : ''">
+                                <svg class="size-4 sm:size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m7 21-4.3-4.3c-1-1-1-2.5 0-3.4l9.6-9.6c1-1 2.5-1 3.4 0l5.6 5.6c1 1 1 2.5 0 3.4L13 21"/><path d="M22 21H7"/><path d="m5 11 9 9"/></svg>
                             </button>
                         </div>
                     </div>
@@ -371,7 +442,7 @@
                 </div>
             </div>
         </template>
-    <div id="print-area">
+    <div id="print-area" class="overflow-x-auto w-full max-w-full pb-4">
         @php
             $hasRegular = $tpUpdate->regular_daily_tx_count || $tpUpdate->regular_monthly_tx_count ||
                 $tpUpdate->regular_withdrawal_daily_count || $tpUpdate->regular_withdrawal_monthly_count ||
@@ -817,12 +888,170 @@
                 exportFormat: 'pdf',
                 imageFilter: 'document',
                 showAdjustments: false,
+                isErasing: false,
+                eraserSize: 20,
+                drawCanvas: null,
+                drawCtx: null,
+                isDrawing: false,
+                eraserEventsAttached: false,
+                pendingCropperData: null,
+                pendingRotation: 0,
                 brightness: 110,
                 contrast: 160,
                 saturation: 100,
                 grayscale: 100,
                 expectedPages: expectedPages,
                 croppedPages: [],
+                
+                toggleEraseMode() {
+                    this.isErasing = !this.isErasing;
+                    if (this.isErasing) {
+                        this.showAdjustments = false;
+                        this.cropper.setDragMode('none');
+                        
+                        const currentData = this.cropper.getImageData();
+                        if (currentData.rotate !== 0) {
+                            this.pendingRotation = currentData.rotate;
+                            this.cropper.rotateTo(0);
+                        }
+                        
+                        setTimeout(() => this.injectEraseLayer(), 100);
+                    } else {
+                        this.cropper.setDragMode('move');
+                        const el = document.querySelector('.erase-layer');
+                        if (el) el.style.display = 'none';
+                        
+                        if (this.pendingRotation !== 0) {
+                            this.cropper.rotateTo(this.pendingRotation);
+                            this.pendingRotation = 0;
+                        }
+                    }
+                },
+
+                injectEraseLayer() {
+                    const canvasContainer = document.querySelector('.cropper-canvas');
+                    if (!canvasContainer) return;
+                    
+                    let eraseLayer = document.querySelector('.erase-layer');
+                    if (!eraseLayer) {
+                        eraseLayer = document.createElement('canvas');
+                        eraseLayer.className = 'erase-layer';
+                        eraseLayer.style.width = '100%';
+                        eraseLayer.style.height = '100%';
+                        eraseLayer.style.position = 'absolute';
+                        eraseLayer.style.top = '0';
+                        eraseLayer.style.left = '0';
+                        eraseLayer.style.pointerEvents = 'none';
+                        eraseLayer.style.zIndex = '50';
+                        canvasContainer.appendChild(eraseLayer);
+                    }
+                    eraseLayer.style.display = 'block';
+
+                    const imageData = this.cropper.getImageData();
+                    if (eraseLayer.width !== Math.round(imageData.naturalWidth)) {
+                        eraseLayer.width = imageData.naturalWidth;
+                        eraseLayer.height = imageData.naturalHeight;
+                    }
+
+                    if (!this.drawCanvas) {
+                        this.drawCanvas = document.createElement('canvas');
+                        this.drawCanvas.width = imageData.naturalWidth;
+                        this.drawCanvas.height = imageData.naturalHeight;
+                        this.drawCtx = this.drawCanvas.getContext('2d');
+                        
+                        const img = document.querySelector('.cropper-hide') || this.$refs.image;
+                        this.drawCtx.drawImage(img, 0, 0);
+                    }
+                    
+                    if (!this.eraserEventsAttached) {
+                        this.eraserEventsAttached = true;
+                        const container = this.$refs.image.parentElement;
+                        
+                        const getCoords = (e) => {
+                            let clientX = e.clientX;
+                            let clientY = e.clientY;
+                            if (e.touches && e.touches.length > 0) {
+                                clientX = e.touches[0].clientX;
+                                clientY = e.touches[0].clientY;
+                            }
+                            
+                            const cc = document.querySelector('.cropper-canvas');
+                            const rect = cc.getBoundingClientRect();
+                            const x = clientX - rect.left;
+                            const y = clientY - rect.top;
+                            
+                            const canvasData = this.cropper.getCanvasData();
+                            const currentImageData = this.cropper.getImageData();
+                            const scaleX = currentImageData.naturalWidth / canvasData.width;
+                            const scaleY = currentImageData.naturalHeight / canvasData.height;
+                            
+                            return {
+                                vx: x * scaleX,
+                                vy: y * scaleY
+                            };
+                        };
+
+                        const draw = (e) => {
+                            if (!this.isErasing || !this.isDrawing) return;
+                            e.preventDefault(); 
+                            const coords = getCoords(e);
+                            
+                            const elayer = document.querySelector('.erase-layer');
+                            if (elayer) {
+                                const eCtx = elayer.getContext('2d');
+                                eCtx.fillStyle = '#ffffff';
+                                eCtx.beginPath();
+                                eCtx.arc(coords.vx, coords.vy, this.eraserSize / 2, 0, Math.PI * 2);
+                                eCtx.fill();
+                            }
+                            
+                            this.drawCtx.fillStyle = '#ffffff';
+                            this.drawCtx.beginPath();
+                            this.drawCtx.arc(coords.vx, coords.vy, this.eraserSize / 2, 0, Math.PI * 2);
+                            this.drawCtx.fill();
+                        };
+
+                        container.addEventListener('mousedown', (e) => {
+                            if (!this.isErasing) return;
+                            e.stopPropagation();
+                            e.preventDefault();
+                            this.isDrawing = true;
+                            draw(e);
+                        }, { capture: true });
+                        container.addEventListener('touchstart', (e) => {
+                            if (!this.isErasing) return;
+                            e.stopPropagation();
+                            e.preventDefault();
+                            this.isDrawing = true;
+                            draw(e);
+                        }, { passive: false, capture: true });
+
+                        window.addEventListener('mousemove', draw);
+                        window.addEventListener('touchmove', draw, {passive: false});
+
+                        const stopDrawing = () => {
+                            if (this.isDrawing && this.isErasing) {
+                                this.isDrawing = false;
+                                this.pendingCropperData = this.cropper.getData();
+                                this.cropper.replace(this.drawCanvas.toDataURL('image/jpeg', 1.0), true);
+                            }
+                            this.isDrawing = false;
+                        };
+
+                        window.addEventListener('mouseup', stopDrawing);
+                        window.addEventListener('touchend', stopDrawing);
+                        
+                        this.$refs.image.addEventListener('ready', () => {
+                            if (this.pendingCropperData) {
+                                this.cropper.setData(this.pendingCropperData);
+                                this.pendingCropperData = null;
+                            }
+                            if (this.isErasing) {
+                                this.injectEraseLayer();
+                            }
+                        });
+                    }
+                },
                 
                 getFilterStyle() {
                     return `contrast(${this.contrast}%) saturate(${this.saturation}%) brightness(${this.brightness}%) grayscale(${this.grayscale}%)`;

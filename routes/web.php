@@ -41,6 +41,8 @@ Route::middleware(['auth', 'active', 'tenant'])->group(function () {
     Route::post('/services/computer-training/attendance/bulk', [ComputerTrainingController::class, 'storeBulkAttendance'])->name('computer-training.attendance.bulk');
     Route::get('/services/computer-training/batches/{batch}/students', [ComputerTrainingController::class, 'getBatchStudents'])->name('computer-training.batches.students');
     Route::put('/services/computer-training/attendance/{attendance}', [ComputerTrainingController::class, 'updateAttendance'])->name('computer-training.attendance.update');
+    Route::post('/services/computer-training/advance-absence', [ComputerTrainingController::class, 'storeAdvanceAbsence'])->name('computer-training.advance-absence.store');
+    Route::delete('/services/computer-training/advance-absence/{advanceAbsence}', [ComputerTrainingController::class, 'destroyAdvanceAbsence'])->name('computer-training.advance-absence.destroy');
     
     Route::post('/services/computer-training/attendance', [ComputerTrainingController::class, 'storeAttendance'])->name('computer-training.attendance.store');
     Route::post('/services/computer-training/classes', [ComputerTrainingController::class, 'storeClassSchedule'])->name('computer-training.classes.store');

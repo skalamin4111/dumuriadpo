@@ -37,6 +37,7 @@ class ServiceController extends Controller
                             'attendances as rank_1_count' => fn ($q) => $q->where('daily_rank', 1),
                             'attendances as rank_2_count' => fn ($q) => $q->where('daily_rank', 2),
                             'attendances as rank_3_count' => fn ($q) => $q->where('daily_rank', 3),
+                            'attendances as advance_absence_count' => fn ($q) => $q->where('is_advance_absence', true),
                         ]);
                     }, 
                     'classSchedule'

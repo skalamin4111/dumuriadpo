@@ -719,6 +719,40 @@ class ComputerTrainingController extends Controller
 
         return back()->with('status', 'Course deleted successfully.')->with('tab', 'batches');
     }
+
+    public function storeAdvanceAbsence(Request $request): RedirectResponse
+    {
+        $data = $request->validate([
+            'student_id' => ['required', 'exists:computer_training_students,id'],
+            'absence_date' => ['required', 'date', 'after_or_equal:today'],
+            'notes' => ['nullable', 'string', 'max:255'],
+        ]);
+
+        $companyId = $request->user() ? $request->user()->company_id : 1;
+
+        \App\Models\ComputerTrainingAdvanceAbsence::updateOrCreate(
+            [
+                'company_id' => $companyId,
+                'student_id' => $data['student_id'],
+                'absence_date' => $data['absence_date'],
+            ],
+            ['notes' => $data['notes'] ?? null]
+        );
+
+        return back()->with('status', 'Advance absence recorded. Student won\'t lose marks for this date.');
+    }
+
+    public function destroyAdvanceAbsence(Request $request, \App\Models\ComputerTrainingAdvanceAbsence $advanceAbsence): RedirectResponse
+    {
+        if ($request->user() && $advanceAbsence->company_id !== $request->user()->company_id) {
+            abort(403);
+        }
+
+        $advanceAbsence->delete();
+
+        return back()->with('status', 'Advance absence note removed.');
+    }
+
     public function getBatchStudents(Request $request, ComputerTrainingBatch $batch)
     {
         if ($request->user() && $batch->company_id !== $request->user()->company_id) {
@@ -736,6 +770,7 @@ class ComputerTrainingController extends Controller
                 'attendances as rank_1_count' => fn ($q) => $q->where('daily_rank', 1),
                 'attendances as rank_2_count' => fn ($q) => $q->where('daily_rank', 2),
                 'attendances as rank_3_count' => fn ($q) => $q->where('daily_rank', 3),
+                'attendances as advance_absence_count' => fn ($q) => $q->where('is_advance_absence', true),
             ])
             ->orderBy('student_id')
             ->get();
@@ -750,9 +785,18 @@ class ComputerTrainingController extends Controller
             ->groupBy('student_id')
             ->map(fn ($group) => $group->first()->status);
 
-        // Attach previous status as model attributes so they serialize correctly
+        // Load advance absences for the selected date
+        $advanceAbsences = \App\Models\ComputerTrainingAdvanceAbsence::whereIn('student_id', $studentIds)
+            ->where('absence_date', $date)
+            ->get()
+            ->keyBy('student_id');
+
+        // Attach previous status and advance absence info as model attributes
         foreach ($students as $student) {
             $student->setAttribute('prev_status', $prevStatuses->get($student->id, null));
+            $aa = $advanceAbsences->get($student->id);
+            $student->setAttribute('advance_absence_note', $aa?->notes);
+            $student->setAttribute('has_advance_absence', $aa ? true : false);
         }
 
         return response()->json([
@@ -774,10 +818,18 @@ class ComputerTrainingController extends Controller
 
         $companyId = $request->user() ? $request->user()->company_id : 1;
 
+        // Load advance absences for the given date
+        $studentIds = collect($data['attendances'])->pluck('student_id');
+        $advanceAbsences = \App\Models\ComputerTrainingAdvanceAbsence::whereIn('student_id', $studentIds)
+            ->where('absence_date', $data['attendance_date'])
+            ->get()
+            ->keyBy('student_id');
+
         foreach ($data['attendances'] as $att) {
             $status = $att['status'];
             $dailyRank = $status === 'present' ? ($att['daily_rank'] ?? null) : null;
             $remarks = $status === 'absent' ? ($att['remarks'] ?? null) : null;
+            $isAdvanceAbsence = $advanceAbsences->has($att['student_id']);
 
             \App\Models\ComputerTrainingAttendance::updateOrCreate(
                 [
@@ -789,8 +841,14 @@ class ComputerTrainingController extends Controller
                     'status' => $status,
                     'daily_rank' => $dailyRank,
                     'remarks' => $remarks,
+                    'is_advance_absence' => $isAdvanceAbsence,
                 ]
             );
+
+            // If this attendance was marked, delete the advance absence record so it won't apply again
+            if ($isAdvanceAbsence) {
+                $advanceAbsences->get($att['student_id'])->delete();
+            }
         }
 
         return back()->with('status', 'Bulk attendance recorded successfully.')->with('tab', 'attendance');
@@ -806,12 +864,15 @@ class ComputerTrainingController extends Controller
             'status' => ['required', \Illuminate\Validation\Rule::in(['present', 'absent', 'late'])],
             'daily_rank' => ['nullable', 'integer', 'in:1,2,3'],
             'remarks' => ['nullable', 'string', 'max:255'],
+            'is_advance_absence' => ['nullable', 'boolean'],
         ]);
 
         if ($data['status'] === 'present') {
             $data['remarks'] = null;
+            $data['is_advance_absence'] = false;
         } else {
             $data['daily_rank'] = null;
+            $data['is_advance_absence'] = $request->boolean('is_advance_absence');
         }
 
         $attendance->update($data);
