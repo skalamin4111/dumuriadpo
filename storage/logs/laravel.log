@@ -4615,3 +4615,12 @@ Error: proc_open(/dev/tty): Failed to open stream: No such device or address at 
 #81 /home/sahil/development/office_project/dpoerp/vendor/phpunit/phpunit/phpunit(104): PHPUnit\\TextUI\\Application->run(Array)
 #82 {main}
 "} 
+[2026-08-02 11:01:55] local.ERROR: Command "tinker" is not defined. {"exception":"[object] (Symfony\\Component\\Console\\Exception\\CommandNotFoundException(code: 0): Command \"tinker\" is not defined. at /home/sahil/development/office_project/dpoerp/vendor/symfony/console/Application.php:759)
+[stacktrace]
+#0 /home/sahil/development/office_project/dpoerp/vendor/symfony/console/Application.php(298): Symfony\\Component\\Console\\Application->find('tinker')
+#1 /home/sahil/development/office_project/dpoerp/vendor/symfony/console/Application.php(195): Symfony\\Component\\Console\\Application->doRun(Object(Symfony\\Component\\Console\\Input\\ArgvInput), Object(Symfony\\Component\\Console\\Output\\ConsoleOutput))
+#2 /home/sahil/development/office_project/dpoerp/vendor/laravel/framework/src/Illuminate/Foundation/Console/Kernel.php(198): Symfony\\Component\\Console\\Application->run(Object(Symfony\\Component\\Console\\Input\\ArgvInput), Object(Symfony\\Component\\Console\\Output\\ConsoleOutput))
+#3 /home/sahil/development/office_project/dpoerp/vendor/laravel/framework/src/Illuminate/Foundation/Application.php(1235): Illuminate\\Foundation\\Console\\Kernel->handle(Object(Symfony\\Component\\Console\\Input\\ArgvInput), Object(Symfony\\Component\\Console\\Output\\ConsoleOutput))
+#4 /home/sahil/development/office_project/dpoerp/artisan(12): Illuminate\\Foundation\\Application->handleCommand(Object(Symfony\\Component\\Console\\Input\\ArgvInput))
+#5 {main}
+"} 
