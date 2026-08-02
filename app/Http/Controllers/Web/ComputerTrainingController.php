@@ -127,123 +127,273 @@ class ComputerTrainingController extends Controller
 
     public function syncAdmittedStudents(Request $request): RedirectResponse
     {
-        $url = 'https://docs.google.com/spreadsheets/d/1ca1k65_IuGOGHgbJQTNKbVkqzLk1CH9Lizu5exDOLIs/export?format=csv&gid=1676498509';
-        
+        $sheetId = '1ca1k65_IuGOGHgbJQTNKbVkqzLk1CH9Lizu5exDOLIs';
+        $gid = '1676498509';
+        $csvUrl = "https://docs.google.com/spreadsheets/d/{$sheetId}/export?format=csv&gid={$gid}";
+
         try {
-            $csvData = file_get_contents($url);
-            if (!$csvData) {
-                return back()->with('error', 'Failed to fetch data from Google Sheets.');
+            $response = \Illuminate\Support\Facades\Http::get($csvUrl);
+
+            // Google sometimes returns an HTML page (login/redirect) instead of CSV.
+            if (!$response->successful() || str_contains($response->body(), '<!DOCTYPE html>')) {
+                return back()->withErrors(['google_sheet' => 'Could not access the Google Sheet. Please ensure its sharing settings are set to "Anyone with the link can view".'])->with('tab', 'students');
             }
 
-            $lines = explode(PHP_EOL, $csvData);
-            $header = str_getcsv(array_shift($lines));
-            
-            $syncedCount = 0;
+            $rows = array_map('str_getcsv', explode("\n", trim($response->body())));
+            if (count($rows) < 2) {
+                return back()->with('status', 'Google Sheet is empty or invalid.')->with('tab', 'students');
+            }
+
+            // Normalize headers so the column mapping always follows the actual
+            // Google Sheet layout, no matter how the columns are ordered/named.
+            $header = array_shift($rows);
+            $header = array_map(fn ($h) => strtolower(trim(preg_replace('/[^A-Za-z0-9-]+/', '_', $h), '_')), $header);
+
+            $col = fn (array $keys) => collect($header)->first(fn ($key) => in_array($key, $keys));
+
+            $serialKey = $col(['serial_no', 'serial', 'no', 'sl_no', 'serial_number']);
+            $batchKey = $col(['batch', 'batch_name', 'batch_no']);
+            $nameKey = $col(['student_name', 'name', 'full_name', 'student']);
+            $fatherKey = $col(['father_s_name', 'fathers_name', 'father_name', 'father']);
+            $motherKey = $col(['mother_s_name', 'mothers_name', 'mother_name', 'mother']);
+            $schoolKey = $col(['school_name', 'school']);
+            $dobKey = $col(['date_of_birth', 'dob', 'birth_date']);
+            $rollKey = $col(['roll_number', 'roll_no', 'roll']);
+            $regKey = $col(['registration_number', 'reg_no', 'registration', 'reg', 'reg_number']);
+            $mobileKey = $col(['mobile_number', 'mobile', 'phone', 'phone_number', 'contact', 'mobile_no']);
+
+            $getVal = function (array $data, $key) {
+                return $key !== null ? trim($data[$key] ?? '') : '';
+            };
+
             $companyId = $request->user() ? $request->user()->company_id : 1;
+            $session = date('Y') . '-2';
+            $syncedCount = 0;
+            $touchedThisRun = [];
+            $touchedBatchIds = [];
 
-            foreach ($lines as $line) {
-                if (empty(trim($line))) continue;
-                
-                $row = str_getcsv($line);
-                if (count($row) < 11) continue;
+            foreach ($rows as $row) {
+                if (count($header) !== count($row)) {
+                    continue; // Skip malformed rows
+                }
+                $data = array_combine($header, $row);
 
-                $sheetSerial = trim($row[0]);
-                $batchName = trim($row[1]);
-                $studentName = trim($row[3]);
-                $fatherName = trim($row[4]);
-                $motherName = trim($row[5]);
-                $schoolName = trim($row[6]);
-                $dob = trim($row[7]);
-                $rollNo = trim($row[8]);
-                $regNo = trim($row[9]);
-                $mobile = trim($row[10]);
+                $sheetSerial = $getVal($data, $serialKey);
+                $batchName = $getVal($data, $batchKey);
+                $studentName = $getVal($data, $nameKey);
+                $fatherName = $getVal($data, $fatherKey);
+                $motherName = $getVal($data, $motherKey);
+                $schoolName = $getVal($data, $schoolKey);
+                $dob = $getVal($data, $dobKey);
+                $rollNo = $getVal($data, $rollKey);
+                $regNo = $getVal($data, $regKey);
+                $mobile = $getVal($data, $mobileKey);
 
-                if (empty($studentName)) continue;
+                if (empty($studentName)) {
+                    continue;
+                }
 
-                // Build notes
-                $notes = [];
-                if ($schoolName) $notes[] = "School: " . $schoolName;
-                if ($motherName) $notes[] = "Mother: " . $motherName;
-                if ($dob) $notes[] = "DOB: " . $dob;
-                if ($rollNo) $notes[] = "Roll: " . $rollNo;
-                if ($regNo) $notes[] = "Reg No: " . $regNo;
-                $notesString = implode("\n", $notes);
-
-                // Find or create batch
+                // Auto-create the batch exactly as named in the Google Sheet.
                 $batchId = null;
-                if ($batchName) {
-                    $batch = \App\Models\ComputerTrainingBatch::firstOrCreate(
+                if ($batchName !== '') {
+                    $batch = ComputerTrainingBatch::firstOrCreate(
                         ['company_id' => $companyId, 'name' => $batchName],
                         [
-                            'type' => 'regular',
+                            'type' => $this->inferBatchType($batchName),
                             'capacity' => 15,
+                            'status' => 'active',
                         ]
                     );
                     $batchId = $batch->id;
+                    $touchedBatchIds[] = $batch->id;
                 }
 
-                // If mobile is empty, try to match by name and father's name
-                $matchQuery = \App\Models\ComputerTrainingStudent::where('company_id', $companyId);
-                if (!empty($mobile)) {
-                    $matchQuery->where('phone', $mobile);
-                } else {
-                    $matchQuery->where('name', $studentName)->where('guardian_name', $fatherName);
+                // Store the exact sheet values (School/Mother/DOB/Roll/Reg) in notes.
+                $notes = [];
+                if ($schoolName) $notes[] = 'School: ' . $schoolName;
+                if ($motherName) $notes[] = 'Mother: ' . $motherName;
+                if ($dob) $notes[] = 'DOB: ' . $dob;
+                if ($rollNo) $notes[] = 'Roll: ' . $rollNo;
+                if ($regNo) $notes[] = 'Reg No: ' . $regNo;
+                $notesString = implode("\n", $notes);
+
+                $seatNumber = (is_numeric($sheetSerial) && $sheetSerial > 0) ? (int) $sheetSerial : null;
+
+                // Match the existing student (most specific match first) so every
+                // sync updates the exact student from the sheet instead of duplicating.
+                $student = null;
+                if ($studentName && $fatherName) {
+                    $student = ComputerTrainingStudent::where('company_id', $companyId)
+                        ->where('name', $studentName)
+                        ->where('guardian_name', $fatherName)
+                        ->first();
+                }
+                if (!$student && $studentName) {
+                    $student = ComputerTrainingStudent::where('company_id', $companyId)
+                        ->where('name', $studentName)
+                        ->first();
+                }
+                if (!$student && $mobile && $studentName) {
+                    $student = ComputerTrainingStudent::where('company_id', $companyId)
+                        ->where('phone', $mobile)
+                        ->where('name', $studentName)
+                        ->first();
+                }
+                // Phone-only fallback handles students whose sheet name differs from
+                // the stored one (e.g. Bengali vs English spelling). It only matches
+                // a unique phone and never a student already handled earlier in this
+                // same sync, so two sheet rows sharing a phone stay separate.
+                if (!$student && $mobile) {
+                    $student = ComputerTrainingStudent::where('company_id', $companyId)
+                        ->where('phone', $mobile)
+                        ->whereNotIn('id', $touchedThisRun)
+                        ->first();
+                    if ($student) {
+                        $phoneCount = ComputerTrainingStudent::where('company_id', $companyId)
+                            ->where('phone', $mobile)
+                            ->whereNotIn('id', $touchedThisRun)
+                            ->count();
+                        if ($phoneCount !== 1) {
+                            $student = null;
+                        }
+                    }
                 }
 
-                $student = $matchQuery->first();
-
-                $session = date('Y') . '-2';
-
-                $seatNumber = null;
-                if (is_numeric($sheetSerial) && $sheetSerial > 0) {
-                    $seatNumber = (int) $sheetSerial;
+                $studentId = null;
+                if ($seatNumber !== null) {
+                    $candidateStudentId = substr(str_replace('-', '', $session), 2) . str_pad($seatNumber, 2, '0', STR_PAD_LEFT);
+                    $taken = ComputerTrainingStudent::where('company_id', $companyId)
+                        ->where('student_id', $candidateStudentId)
+                        ->where('id', '!=', $student?->id ?? 0)
+                        ->exists();
+                    if (!$taken) {
+                        $studentId = $candidateStudentId;
+                    }
                 }
+
+                $dataToSave = [
+                    'name' => $studentName,
+                    'father_name' => $fatherName,
+                    'mother_name' => $motherName,
+                    'guardian_name' => $fatherName,
+                    'phone' => $mobile,
+                    'batch_id' => $batchId,
+                    'seat_number' => $seatNumber,
+                    'student_id' => $studentId,
+                    'notes' => $notesString,
+                ];
 
                 if ($student) {
-                    $updateData = [
-                        'name' => $studentName,
-                        'guardian_name' => $fatherName,
-                        'batch_id' => $batchId,
-                        'notes' => $notesString ? ($student->notes ? $student->notes . "\n" . $notesString : $notesString) : $student->notes,
-                    ];
-                    
-                    if ($seatNumber !== null) {
-                        $updateData['seat_number'] = $seatNumber;
-                        $updateData['student_id'] = substr(str_replace('-', '', $session), 2) . str_pad($seatNumber, 2, '0', STR_PAD_LEFT);
-                    }
-                    
-                    $student->update($updateData);
+                    $student->update($dataToSave);
+                    $touchedThisRun[] = $student->id;
                 } else {
-                    // Generate student ID
-                    if ($seatNumber === null) {
-                        $seatNumber = \App\Models\ComputerTrainingStudent::where('company_id', $companyId)->where('batch_id', $batchId)->max('seat_number') + 1;
-                    }
-                    $studentId = substr(str_replace('-', '', $session), 2) . str_pad($seatNumber, 2, '0', STR_PAD_LEFT);
-
-                    \App\Models\ComputerTrainingStudent::create([
+                    $newStudent = ComputerTrainingStudent::create([
+                        ...$dataToSave,
                         'company_id' => $companyId,
-                        'name' => $studentName,
-                        'phone' => $mobile,
-                        'guardian_name' => $fatherName,
                         'course' => 'Diploma in Software Application',
-                        'batch_id' => $batchId,
                         'admission_date' => now(),
                         'session' => $session,
-                        'seat_number' => $seatNumber,
-                        'student_id' => $studentId,
                         'status' => 'active',
-                        'notes' => $notesString
                     ]);
+                    $touchedThisRun[] = $newStudent->id;
                 }
+
                 $syncedCount++;
             }
 
-            return back()->with('status', "Successfully synced {$syncedCount} admitted students from Google Sheets!");
+            // Self-heal duplicates left behind by older syncs: any active students
+            // that share the same name + phone + batch are the same person. Keep
+            // the oldest record, re-attach attendance the keeper does not already
+            // have, and soft-delete the extras.
+            $duplicateGroups = ComputerTrainingStudent::select('name', 'phone', 'batch_id')
+                ->where('company_id', $companyId)
+                ->whereNotNull('phone')
+                ->where('phone', '<>', '')
+                ->whereNotNull('batch_id')
+                ->whereNull('deleted_at')
+                ->groupBy('name', 'phone', 'batch_id')
+                ->havingRaw('COUNT(*) > 1')
+                ->get();
+
+            foreach ($duplicateGroups as $dup) {
+                $group = ComputerTrainingStudent::where('company_id', $companyId)
+                    ->where('name', $dup->name)
+                    ->where('phone', $dup->phone)
+                    ->where('batch_id', $dup->batch_id)
+                    ->whereNull('deleted_at')
+                    ->orderBy('id')
+                    ->get();
+
+                $keeper = $group->shift();
+                if (!$keeper) {
+                    continue;
+                }
+
+                foreach ($group as $extra) {
+                    foreach ($extra->attendances as $attendance) {
+                        $keeperHasDate = ComputerTrainingAttendance::where('student_id', $keeper->id)
+                            ->where('attendance_date', $attendance->attendance_date)
+                            ->exists();
+                        if ($keeperHasDate) {
+                            $attendance->delete();
+                        } else {
+                            $attendance->update(['student_id' => $keeper->id]);
+                        }
+                    }
+
+                    foreach ($extra->advanceAbsences as $advanceAbsence) {
+                        $advanceAbsence->update(['student_id' => $keeper->id]);
+                    }
+
+                    ComputerTrainingFee::where('student_id', $extra->id)->delete();
+
+                    $extra->delete();
+                }
+            }
+
+            // The Google Sheet is the single source of truth for students and
+            // batches: remove (soft-delete) anything that no longer exists in the
+            // sheet so the student list and batch dropdowns match it exactly.
+            // Related records (attendance, fees, absences) are preserved, only the
+            // student/batch rows are hidden. Guarded so an empty/malformed sync
+            // run can never wipe the whole database.
+            if (!empty($touchedThisRun)) {
+                $staleStudents = ComputerTrainingStudent::where('company_id', $companyId)
+                    ->whereNull('deleted_at')
+                    ->whereNotIn('id', $touchedThisRun)
+                    ->get();
+
+                foreach ($staleStudents as $stale) {
+                    $stale->delete();
+                }
+            }
+
+            if (!empty($touchedBatchIds)) {
+                ComputerTrainingBatch::where('company_id', $companyId)
+                    ->whereNull('deleted_at')
+                    ->whereNotIn('id', $touchedBatchIds)
+                    ->delete();
+            }
+
+            return back()->with('status', "Successfully synced {$syncedCount} admitted students from Google Sheets.")->with('tab', 'students');
 
         } catch (\Exception $e) {
-            \Illuminate\Support\Facades\Log::error("Google Sheets Sync Error: " . $e->getMessage());
-            return back()->with('error', 'Error syncing data: ' . $e->getMessage());
+            \Illuminate\Support\Facades\Log::error('Google Sheets Sync Error: ' . $e->getMessage());
+            return back()->with('error', 'Error syncing data: ' . $e->getMessage())->with('tab', 'students');
         }
+    }
+
+    private function inferBatchType(string $name): string
+    {
+        $upper = strtoupper(trim($name));
+        if (str_starts_with($upper, 'R-')) {
+            return 'R';
+        }
+        if (str_starts_with($upper, 'S-')) {
+            return 'S';
+        }
+
+        return 'regular';
     }
 
     public function storeBatch(Request $request): RedirectResponse
