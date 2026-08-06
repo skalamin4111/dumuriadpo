@@ -2,28 +2,30 @@
 
 namespace App\Http\Controllers\Web;
 
+use App\Exports\ComputerTrainingMarketingLeadExport;
 use App\Http\Controllers\Controller;
+use App\Imports\ComputerTrainingMarketingLeadImport;
+use App\Jobs\SendWhatsAppNoticeJob;
+use App\Models\ComputerTrainingAdvanceAbsence;
 use App\Models\ComputerTrainingAttendance;
+use App\Models\ComputerTrainingBatch;
 use App\Models\ComputerTrainingClassSchedule;
+use App\Models\ComputerTrainingCourse;
 use App\Models\ComputerTrainingExam;
 use App\Models\ComputerTrainingFee;
 use App\Models\ComputerTrainingMarketingLead;
 use App\Models\ComputerTrainingNotice;
 use App\Models\ComputerTrainingStudent;
-use App\Models\ComputerTrainingBatch;
-use App\Models\ComputerTrainingCourse;
 use App\Models\Reminder;
-use App\Exports\ComputerTrainingMarketingLeadExport;
-use App\Imports\ComputerTrainingMarketingLeadImport;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\Rule;
 use Maatwebsite\Excel\Facades\Excel;
 
 class ComputerTrainingController extends Controller
 {
-
-
     public function storeStudent(Request $request): RedirectResponse
     {
         $data = $request->validate([
@@ -58,7 +60,7 @@ class ComputerTrainingController extends Controller
             'batch_id' => ['nullable', 'exists:computer_training_batches,id'],
             'seat_number' => ['nullable', 'integer', 'min:1', 'max:15', Rule::unique('computer_training_students')->where(function ($query) use ($request) {
                 return $query->where('company_id', $request->user() ? $request->user()->company_id : 1)
-                             ->where('batch_id', $request->batch_id);
+                    ->where('batch_id', $request->batch_id);
             })],
         ]);
 
@@ -105,7 +107,7 @@ class ComputerTrainingController extends Controller
             'batch_id' => ['nullable', 'exists:computer_training_batches,id'],
             'seat_number' => ['nullable', 'integer', 'min:1', 'max:15', Rule::unique('computer_training_students')->where(function ($query) use ($request) {
                 return $query->where('company_id', $request->user() ? $request->user()->company_id : 1)
-                             ->where('batch_id', $request->batch_id);
+                    ->where('batch_id', $request->batch_id);
             })],
         ]);
 
@@ -132,10 +134,10 @@ class ComputerTrainingController extends Controller
         $csvUrl = "https://docs.google.com/spreadsheets/d/{$sheetId}/export?format=csv&gid={$gid}";
 
         try {
-            $response = \Illuminate\Support\Facades\Http::get($csvUrl);
+            $response = Http::get($csvUrl);
 
             // Google sometimes returns an HTML page (login/redirect) instead of CSV.
-            if (!$response->successful() || str_contains($response->body(), '<!DOCTYPE html>')) {
+            if (! $response->successful() || str_contains($response->body(), '<!DOCTYPE html>')) {
                 return back()->withErrors(['google_sheet' => 'Could not access the Google Sheet. Please ensure its sharing settings are set to "Anyone with the link can view".'])->with('tab', 'students');
             }
 
@@ -167,7 +169,7 @@ class ComputerTrainingController extends Controller
             };
 
             $companyId = $request->user() ? $request->user()->company_id : 1;
-            $session = date('Y') . '-2';
+            $session = date('Y').'-2';
             $syncedCount = 0;
             $touchedThisRun = [];
             $touchedBatchIds = [];
@@ -210,11 +212,21 @@ class ComputerTrainingController extends Controller
 
                 // Store the exact sheet values (School/Mother/DOB/Roll/Reg) in notes.
                 $notes = [];
-                if ($schoolName) $notes[] = 'School: ' . $schoolName;
-                if ($motherName) $notes[] = 'Mother: ' . $motherName;
-                if ($dob) $notes[] = 'DOB: ' . $dob;
-                if ($rollNo) $notes[] = 'Roll: ' . $rollNo;
-                if ($regNo) $notes[] = 'Reg No: ' . $regNo;
+                if ($schoolName) {
+                    $notes[] = 'School: '.$schoolName;
+                }
+                if ($motherName) {
+                    $notes[] = 'Mother: '.$motherName;
+                }
+                if ($dob) {
+                    $notes[] = 'DOB: '.$dob;
+                }
+                if ($rollNo) {
+                    $notes[] = 'Roll: '.$rollNo;
+                }
+                if ($regNo) {
+                    $notes[] = 'Reg No: '.$regNo;
+                }
                 $notesString = implode("\n", $notes);
 
                 $seatNumber = (is_numeric($sheetSerial) && $sheetSerial > 0) ? (int) $sheetSerial : null;
@@ -228,12 +240,12 @@ class ComputerTrainingController extends Controller
                         ->where('guardian_name', $fatherName)
                         ->first();
                 }
-                if (!$student && $studentName) {
+                if (! $student && $studentName) {
                     $student = ComputerTrainingStudent::where('company_id', $companyId)
                         ->where('name', $studentName)
                         ->first();
                 }
-                if (!$student && $mobile && $studentName) {
+                if (! $student && $mobile && $studentName) {
                     $student = ComputerTrainingStudent::where('company_id', $companyId)
                         ->where('phone', $mobile)
                         ->where('name', $studentName)
@@ -243,7 +255,7 @@ class ComputerTrainingController extends Controller
                 // the stored one (e.g. Bengali vs English spelling). It only matches
                 // a unique phone and never a student already handled earlier in this
                 // same sync, so two sheet rows sharing a phone stay separate.
-                if (!$student && $mobile) {
+                if (! $student && $mobile) {
                     $student = ComputerTrainingStudent::where('company_id', $companyId)
                         ->where('phone', $mobile)
                         ->whereNotIn('id', $touchedThisRun)
@@ -261,12 +273,12 @@ class ComputerTrainingController extends Controller
 
                 $studentId = null;
                 if ($seatNumber !== null) {
-                    $candidateStudentId = substr(str_replace('-', '', $session), 2) . str_pad($seatNumber, 2, '0', STR_PAD_LEFT);
+                    $candidateStudentId = substr(str_replace('-', '', $session), 2).str_pad($seatNumber, 2, '0', STR_PAD_LEFT);
                     $taken = ComputerTrainingStudent::where('company_id', $companyId)
                         ->where('student_id', $candidateStudentId)
                         ->where('id', '!=', $student?->id ?? 0)
                         ->exists();
-                    if (!$taken) {
+                    if (! $taken) {
                         $studentId = $candidateStudentId;
                     }
                 }
@@ -325,7 +337,7 @@ class ComputerTrainingController extends Controller
                     ->get();
 
                 $keeper = $group->shift();
-                if (!$keeper) {
+                if (! $keeper) {
                     continue;
                 }
 
@@ -357,7 +369,7 @@ class ComputerTrainingController extends Controller
             // Related records (attendance, fees, absences) are preserved, only the
             // student/batch rows are hidden. Guarded so an empty/malformed sync
             // run can never wipe the whole database.
-            if (!empty($touchedThisRun)) {
+            if (! empty($touchedThisRun)) {
                 $staleStudents = ComputerTrainingStudent::where('company_id', $companyId)
                     ->whereNull('deleted_at')
                     ->whereNotIn('id', $touchedThisRun)
@@ -368,7 +380,7 @@ class ComputerTrainingController extends Controller
                 }
             }
 
-            if (!empty($touchedBatchIds)) {
+            if (! empty($touchedBatchIds)) {
                 ComputerTrainingBatch::where('company_id', $companyId)
                     ->whereNull('deleted_at')
                     ->whereNotIn('id', $touchedBatchIds)
@@ -378,8 +390,9 @@ class ComputerTrainingController extends Controller
             return back()->with('status', "Successfully synced {$syncedCount} admitted students from Google Sheets.")->with('tab', 'students');
 
         } catch (\Exception $e) {
-            \Illuminate\Support\Facades\Log::error('Google Sheets Sync Error: ' . $e->getMessage());
-            return back()->with('error', 'Error syncing data: ' . $e->getMessage())->with('tab', 'students');
+            Log::error('Google Sheets Sync Error: '.$e->getMessage());
+
+            return back()->with('error', 'Error syncing data: '.$e->getMessage())->with('tab', 'students');
         }
     }
 
@@ -469,8 +482,8 @@ class ComputerTrainingController extends Controller
             'topic' => ['nullable', 'string'],
         ]);
 
-        if (!empty($data['batch_id'])) {
-            $batch = \App\Models\ComputerTrainingBatch::find($data['batch_id']);
+        if (! empty($data['batch_id'])) {
+            $batch = ComputerTrainingBatch::find($data['batch_id']);
             if ($batch) {
                 $data['batch_name'] = $batch->name;
             }
@@ -566,7 +579,7 @@ class ComputerTrainingController extends Controller
 
         if ($data['status'] === 'admitted') {
             $studentSearchArgs = ['company_id' => $lead->company_id];
-            if (!empty($lead->phone)) {
+            if (! empty($lead->phone)) {
                 $studentSearchArgs['phone'] = $lead->phone;
             } else {
                 $studentSearchArgs['name'] = $lead->name;
@@ -581,7 +594,7 @@ class ComputerTrainingController extends Controller
                     'duration' => $lead->duration,
                     'status' => 'admitted',
                     'admission_date' => now()->toDateString(),
-                    'notes' => ltrim(($lead->notes . "\n" . $lead->remarks), "\n"),
+                    'notes' => ltrim(($lead->notes."\n".$lead->remarks), "\n"),
                 ]
             );
         }
@@ -592,6 +605,7 @@ class ComputerTrainingController extends Controller
     public function exportMarketingLead(Request $request)
     {
         $companyId = $request->user()?->company_id;
+
         return Excel::download(new ComputerTrainingMarketingLeadExport($companyId), 'marketing_leads.xlsx');
     }
 
@@ -602,11 +616,11 @@ class ComputerTrainingController extends Controller
         ]);
 
         $companyId = $request->user()?->company_id;
-        
+
         try {
             Excel::import(new ComputerTrainingMarketingLeadImport($companyId), $request->file('file'));
         } catch (\Exception $e) {
-            return back()->withErrors(['file' => 'Error importing file: ' . $e->getMessage()])->with('tab', 'marketing');
+            return back()->withErrors(['file' => 'Error importing file: '.$e->getMessage()])->with('tab', 'marketing');
         }
 
         return back()->with('status', 'Marketing leads imported successfully.')->with('tab', 'marketing');
@@ -643,7 +657,7 @@ class ComputerTrainingController extends Controller
             'is_active' => ['nullable', 'boolean'],
             'send_whatsapp' => ['nullable', 'boolean'],
             'image' => ['nullable', 'image', 'max:5120'],
-            'target_type' => ['required', \Illuminate\Validation\Rule::in(['all', 'course', 'batch', 'student'])],
+            'target_type' => ['required', Rule::in(['all', 'course', 'batch', 'student'])],
             'target_course' => ['nullable', 'string', 'required_if:target_type,course'],
             'target_batch_id' => ['nullable', 'exists:computer_training_batches,id', 'required_if:target_type,batch'],
             'target_student_id' => ['nullable', 'exists:computer_training_students,id', 'required_if:target_type,student'],
@@ -651,7 +665,7 @@ class ComputerTrainingController extends Controller
 
         $data['is_active'] = $request->boolean('is_active', true);
         $sendWhatsapp = $request->boolean('send_whatsapp', false);
-        
+
         if ($data['target_type'] === 'all') {
             $data['audience'] = 'all';
         } else {
@@ -662,17 +676,23 @@ class ComputerTrainingController extends Controller
             $data['image_path'] = $request->file('image')->store('notices', 'public');
         }
 
-        if ($data['target_type'] !== 'course') $data['target_course'] = null;
-        if ($data['target_type'] !== 'batch') $data['target_batch_id'] = null;
-        if ($data['target_type'] !== 'student') $data['target_student_id'] = null;
+        if ($data['target_type'] !== 'course') {
+            $data['target_course'] = null;
+        }
+        if ($data['target_type'] !== 'batch') {
+            $data['target_batch_id'] = null;
+        }
+        if ($data['target_type'] !== 'student') {
+            $data['target_student_id'] = null;
+        }
 
         $notice = ComputerTrainingNotice::create($this->withCompany($request, $data));
 
         if ($sendWhatsapp) {
-            $query = \App\Models\ComputerTrainingStudent::query()
+            $query = ComputerTrainingStudent::query()
                 ->where('company_id', $request->user() ? $request->user()->company_id : 1)
                 ->whereNotNull('phone');
-            
+
             if ($data['target_type'] === 'course') {
                 $query->where('course', $data['target_course']);
             } elseif ($data['target_type'] === 'batch') {
@@ -680,11 +700,11 @@ class ComputerTrainingController extends Controller
             } elseif ($data['target_type'] === 'student') {
                 $query->where('id', $data['target_student_id']);
             }
-            
+
             $phoneNumbers = $query->pluck('phone')->toArray();
-            
-            if (!empty($phoneNumbers)) {
-                \App\Jobs\SendWhatsAppNoticeJob::dispatch($notice, $phoneNumbers);
+
+            if (! empty($phoneNumbers)) {
+                SendWhatsAppNoticeJob::dispatch($notice, $phoneNumbers);
             }
         }
 
@@ -698,10 +718,10 @@ class ComputerTrainingController extends Controller
         $csvUrl = "https://docs.google.com/spreadsheets/d/{$sheetId}/export?format=csv&gid={$gid}";
 
         try {
-            $response = \Illuminate\Support\Facades\Http::get($csvUrl);
-            
+            $response = Http::get($csvUrl);
+
             // Check if Google returned an HTML page (like a login page) instead of CSV
-            if (!$response->successful() || str_contains($response->body(), '<!DOCTYPE html>')) {
+            if (! $response->successful() || str_contains($response->body(), '<!DOCTYPE html>')) {
                 return back()->withErrors(['google_sheet' => 'Could not access the Google Sheet. Please ensure its sharing settings are set to "Anyone with the link can view".'])->with('tab', 'marketing');
             }
 
@@ -712,8 +732,8 @@ class ComputerTrainingController extends Controller
 
             $header = array_shift($rows);
             // lowercase and slugify headers for easier matching
-            $header = array_map(fn($h) => strtolower(trim(preg_replace('/[^A-Za-z0-9-]+/', '_', $h), '_')), $header);
-            
+            $header = array_map(fn ($h) => strtolower(trim(preg_replace('/[^A-Za-z0-9-]+/', '_', $h), '_')), $header);
+
             $companyId = $request->user()?->company_id;
             $importedCount = 0;
             $syncedLeadIds = [];
@@ -723,25 +743,27 @@ class ComputerTrainingController extends Controller
                     continue; // Skip malformed rows
                 }
                 $data = array_combine($header, $row);
-                
-                $nameKey = collect($header)->first(fn($key) => in_array($key, ['student_name', 'name', 'full_name', 'student', 'lead_name']));
-                $phoneKey = collect($header)->first(fn($key) => in_array($key, ['mobile_number', 'phone', 'mobile', 'contact', 'phone_number']));
-                $courseKey = collect($header)->first(fn($key) => in_array($key, ['interested_course', 'course', 'program']));
-                $sourceKey = collect($header)->first(fn($key) => in_array($key, ['school_name', 'source', 'school']));
-                $statusKey = collect($header)->first(fn($key) => in_array($key, ['status', 'state']));
-                $commentKey = collect($header)->first(fn($key) => in_array($key, ['comment', 'comments', 'note', 'notes', 'remark', 'remarks']));
-                
-                if (!$nameKey || empty($data[$nameKey])) continue;
+
+                $nameKey = collect($header)->first(fn ($key) => in_array($key, ['student_name', 'name', 'full_name', 'student', 'lead_name']));
+                $phoneKey = collect($header)->first(fn ($key) => in_array($key, ['mobile_number', 'phone', 'mobile', 'contact', 'phone_number']));
+                $courseKey = collect($header)->first(fn ($key) => in_array($key, ['interested_course', 'course', 'program']));
+                $sourceKey = collect($header)->first(fn ($key) => in_array($key, ['school_name', 'source', 'school']));
+                $statusKey = collect($header)->first(fn ($key) => in_array($key, ['status', 'state']));
+                $commentKey = collect($header)->first(fn ($key) => in_array($key, ['comment', 'comments', 'note', 'notes', 'remark', 'remarks']));
+
+                if (! $nameKey || empty($data[$nameKey])) {
+                    continue;
+                }
 
                 $name = trim($data[$nameKey]);
-                $phone = $phoneKey && !empty($data[$phoneKey]) ? trim($data[$phoneKey]) : null;
+                $phone = $phoneKey && ! empty($data[$phoneKey]) ? trim($data[$phoneKey]) : null;
 
-                $commentValue = $commentKey && !empty($data[$commentKey]) ? trim($data[$commentKey]) : null;
-                
+                $commentValue = $commentKey && ! empty($data[$commentKey]) ? trim($data[$commentKey]) : null;
+
                 $validStatuses = ['new', 'contacting', 'interested', 'admitted', 'not interested'];
                 $statusValue = 'new';
-                
-                if (!empty($commentValue)) {
+
+                if (! empty($commentValue)) {
                     $potentialStatus = strtolower($commentValue);
                     if (in_array($potentialStatus, $validStatuses)) {
                         $statusValue = $potentialStatus;
@@ -749,7 +771,7 @@ class ComputerTrainingController extends Controller
                         // If it's arbitrary text (like a note), fallback to 'contacting' to avoid MySQL errors.
                         $statusValue = 'contacting';
                     }
-                } elseif ($statusKey && !empty($data[$statusKey])) {
+                } elseif ($statusKey && ! empty($data[$statusKey])) {
                     $potentialStatus = strtolower(trim($data[$statusKey]));
                     if (in_array($potentialStatus, $validStatuses)) {
                         $statusValue = $potentialStatus;
@@ -759,24 +781,24 @@ class ComputerTrainingController extends Controller
                 // Deduplication based on phone if available, otherwise fallback to name
                 $existing = null;
                 if ($phone) {
-                    $existing = \App\Models\ComputerTrainingMarketingLead::where('company_id', $companyId)
-                                ->where('phone', $phone)
-                                ->first();
+                    $existing = ComputerTrainingMarketingLead::where('company_id', $companyId)
+                        ->where('phone', $phone)
+                        ->first();
                 } else {
-                    $existing = \App\Models\ComputerTrainingMarketingLead::where('company_id', $companyId)
-                                ->where('name', $name)
-                                ->first();
+                    $existing = ComputerTrainingMarketingLead::where('company_id', $companyId)
+                        ->where('name', $name)
+                        ->first();
                 }
 
-                if (!$existing) {
-                    $lead = \App\Models\ComputerTrainingMarketingLead::create([
-                        'company_id'        => $companyId,
-                        'name'              => $name,
-                        'phone'             => $phone,
+                if (! $existing) {
+                    $lead = ComputerTrainingMarketingLead::create([
+                        'company_id' => $companyId,
+                        'name' => $name,
+                        'phone' => $phone,
                         'interested_course' => $courseKey && isset($data[$courseKey]) ? trim($data[$courseKey]) : null,
-                        'source'            => $sourceKey && isset($data[$sourceKey]) ? trim($data[$sourceKey]) : null,
-                        'status'            => $statusValue,
-                        'notes'             => $commentValue,
+                        'source' => $sourceKey && isset($data[$sourceKey]) ? trim($data[$sourceKey]) : null,
+                        'status' => $statusValue,
+                        'notes' => $commentValue,
                     ]);
                     $syncedLeadIds[] = $lead->id;
                     $importedCount++;
@@ -791,12 +813,12 @@ class ComputerTrainingController extends Controller
                     if ($sourceKey && isset($data[$sourceKey])) {
                         $updateData['source'] = trim($data[$sourceKey]);
                     }
-                    
+
                     $updateData['status'] = $statusValue;
                     if ($commentValue) {
                         $updateData['notes'] = $commentValue;
                     }
-                    
+
                     $existing->update($updateData);
                     $syncedLeadIds[] = $existing->id;
                 }
@@ -804,18 +826,18 @@ class ComputerTrainingController extends Controller
 
             // Keep only Google Sheet data by deleting leads that were not in the current sync
             if (count($syncedLeadIds) > 0) {
-                \App\Models\ComputerTrainingMarketingLead::where('company_id', $companyId)
+                ComputerTrainingMarketingLead::where('company_id', $companyId)
                     ->whereNotIn('id', $syncedLeadIds)
                     ->delete();
             } else {
                 // If the sheet was completely empty of valid leads, clear everything
-                \App\Models\ComputerTrainingMarketingLead::where('company_id', $companyId)->delete();
+                ComputerTrainingMarketingLead::where('company_id', $companyId)->delete();
             }
 
-            return back()->with('status', "Successfully synced Google Sheet. Only current Google Sheet leads are kept.")->with('tab', 'marketing');
+            return back()->with('status', 'Successfully synced Google Sheet. Only current Google Sheet leads are kept.')->with('tab', 'marketing');
 
         } catch (\Exception $e) {
-            return back()->withErrors(['google_sheet' => 'Error syncing Google Sheet: ' . $e->getMessage()])->with('tab', 'marketing');
+            return back()->withErrors(['google_sheet' => 'Error syncing Google Sheet: '.$e->getMessage()])->with('tab', 'marketing');
         }
     }
 
@@ -880,7 +902,7 @@ class ComputerTrainingController extends Controller
 
         $companyId = $request->user() ? $request->user()->company_id : 1;
 
-        \App\Models\ComputerTrainingAdvanceAbsence::updateOrCreate(
+        ComputerTrainingAdvanceAbsence::updateOrCreate(
             [
                 'company_id' => $companyId,
                 'student_id' => $data['student_id'],
@@ -892,7 +914,7 @@ class ComputerTrainingController extends Controller
         return back()->with('status', 'Advance absence recorded. Student won\'t lose marks for this date.');
     }
 
-    public function destroyAdvanceAbsence(Request $request, \App\Models\ComputerTrainingAdvanceAbsence $advanceAbsence): RedirectResponse
+    public function destroyAdvanceAbsence(Request $request, ComputerTrainingAdvanceAbsence $advanceAbsence): RedirectResponse
     {
         if ($request->user() && $advanceAbsence->company_id !== $request->user()->company_id) {
             abort(403);
@@ -928,7 +950,7 @@ class ComputerTrainingController extends Controller
         $studentIds = $students->pluck('id')->toArray();
 
         // Query the most recent attendance record before the selected date for each student
-        $prevStatuses = \App\Models\ComputerTrainingAttendance::whereIn('student_id', $studentIds)
+        $prevStatuses = ComputerTrainingAttendance::whereIn('student_id', $studentIds)
             ->where('attendance_date', '<', $date)
             ->orderBy('attendance_date', 'desc')
             ->get()
@@ -936,7 +958,7 @@ class ComputerTrainingController extends Controller
             ->map(fn ($group) => $group->first()->status);
 
         // Load advance absences for the selected date
-        $advanceAbsences = \App\Models\ComputerTrainingAdvanceAbsence::whereIn('student_id', $studentIds)
+        $advanceAbsences = ComputerTrainingAdvanceAbsence::whereIn('student_id', $studentIds)
             ->where('absence_date', $date)
             ->get()
             ->keyBy('student_id');
@@ -950,42 +972,53 @@ class ComputerTrainingController extends Controller
         }
 
         return response()->json([
-            'students' => $students
+            'students' => $students,
         ]);
     }
 
     public function storeBulkAttendance(Request $request): RedirectResponse
     {
+        $skipUnmarked = $request->boolean('skip_unmarked');
+
         $data = $request->validate([
             'batch_id' => ['required', 'exists:computer_training_batches,id'],
             'attendance_date' => ['required', 'date'],
             'attendances' => ['required', 'array'],
             'attendances.*.student_id' => ['required', 'exists:computer_training_students,id'],
-            'attendances.*.status' => ['required', \Illuminate\Validation\Rule::in(['present', 'absent', 'late'])],
+            'attendances.*.status' => $skipUnmarked
+                ? ['nullable', Rule::in(['present', 'absent', 'late'])]
+                : ['required', Rule::in(['present', 'absent', 'late'])],
             'attendances.*.daily_rank' => ['nullable', 'integer', 'in:1,2,3'],
             'attendances.*.remarks' => ['nullable', 'string', 'max:255'],
+            'skip_unmarked' => ['nullable', 'boolean'],
         ]);
 
         $companyId = $request->user() ? $request->user()->company_id : 1;
 
         // Load advance absences for the given date
         $studentIds = collect($data['attendances'])->pluck('student_id');
-        $advanceAbsences = \App\Models\ComputerTrainingAdvanceAbsence::whereIn('student_id', $studentIds)
+        $advanceAbsences = ComputerTrainingAdvanceAbsence::whereIn('student_id', $studentIds)
             ->where('absence_date', $data['attendance_date'])
             ->get()
             ->keyBy('student_id');
 
         foreach ($data['attendances'] as $att) {
+            // When the user opted into partial attendance, skip any student
+            // that was left unmarked so the submission still goes through.
+            if ($skipUnmarked && empty($att['status'])) {
+                continue;
+            }
+
             $status = $att['status'];
             $dailyRank = $status === 'present' ? ($att['daily_rank'] ?? null) : null;
             $remarks = $status === 'absent' ? ($att['remarks'] ?? null) : null;
             $isAdvanceAbsence = $advanceAbsences->has($att['student_id']);
 
-            \App\Models\ComputerTrainingAttendance::updateOrCreate(
+            ComputerTrainingAttendance::updateOrCreate(
                 [
                     'company_id' => $companyId,
                     'student_id' => $att['student_id'],
-                    'attendance_date' => $data['attendance_date']
+                    'attendance_date' => $data['attendance_date'],
                 ],
                 [
                     'status' => $status,
@@ -1004,14 +1037,14 @@ class ComputerTrainingController extends Controller
         return back()->with('status', 'Bulk attendance recorded successfully.')->with('tab', 'attendance');
     }
 
-    public function updateAttendance(Request $request, \App\Models\ComputerTrainingAttendance $attendance): RedirectResponse
+    public function updateAttendance(Request $request, ComputerTrainingAttendance $attendance): RedirectResponse
     {
         if ($request->user() && $attendance->company_id !== $request->user()->company_id) {
             abort(403);
         }
 
         $data = $request->validate([
-            'status' => ['required', \Illuminate\Validation\Rule::in(['present', 'absent', 'late'])],
+            'status' => ['required', Rule::in(['present', 'absent', 'late'])],
             'daily_rank' => ['nullable', 'integer', 'in:1,2,3'],
             'remarks' => ['nullable', 'string', 'max:255'],
             'is_advance_absence' => ['nullable', 'boolean'],
@@ -1030,5 +1063,3 @@ class ComputerTrainingController extends Controller
         return back()->with('status', 'Attendance record updated successfully.')->with('tab', 'attendance');
     }
 }
-
-

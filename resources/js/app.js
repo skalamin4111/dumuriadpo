@@ -5,7 +5,8 @@ window.Alpine = Alpine;
 window.Chart = Chart;
 
 Alpine.data('theme', () => ({
-  dark: localStorage.theme === 'dark',
+  dark: (localStorage.theme === 'dark')
+    || (!localStorage.theme && window.matchMedia('(prefers-color-scheme: dark)').matches),
   init() {
     this.apply();
   },

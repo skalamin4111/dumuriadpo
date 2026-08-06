@@ -931,6 +931,7 @@
             attendanceDate: '<?php echo e(now()->toDateString()); ?>',
             students: [], 
             loading: false,
+            skipUnmarked: false,
             editAttendance: null,
             viewStudentAttendance: null,
             advanceAbsenceStudent: null,
@@ -968,12 +969,26 @@
                 this.advanceAbsenceStudent = student;
                 this.advanceAbsenceDate = '<?php echo e(now()->addDay()->toDateString()); ?>';
                 this.advanceAbsenceNotes = '';
+            },
+
+            markedCount() {
+                return this.students.filter(s => s.status !== '').length;
+            },
+            allMarked() {
+                return this.students.length > 0 && this.students.every(s => s.status !== '');
+            },
+            canSubmit() {
+                if (this.students.length === 0 || this.loading) return false;
+                if (this.skipUnmarked) {
+                    return this.markedCount() > 0;
+                }
+                return this.allMarked();
             }
         }">
             
             <div class="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-4">
                 <h2 class="text-lg font-bold text-slate-800 dark:text-slate-200">Daily Attendance History</h2>
-                <button type="button" @click="showBulkModal = true; selectedCourse = 'Diploma in Software Application'; selectedBatchId = ''; students = [];" class="btn btn-primary px-5 py-2.5">
+                <button type="button" @click="showBulkModal = true; selectedCourse = 'Diploma in Software Application'; selectedBatchId = ''; students = []; skipUnmarked = false;" class="btn btn-primary px-5 py-2.5">
                     <svg class="size-5 mr-2 inline-block" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                     Check Attendance
                 </button>
@@ -1148,9 +1163,19 @@
                                 </div>
                             </div>
 
-                            <div class="p-6 border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50 shrink-0 flex justify-end gap-3 rounded-b-2xl">
-                                <button type="button" @click="showBulkModal = false" class="btn bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700">Cancel</button>
-                                <button type="submit" class="btn btn-primary px-8" :disabled="students.length === 0 || loading">Save Attendance</button>
+                            <div class="p-6 border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50 shrink-0 flex justify-between items-center gap-3 rounded-b-2xl">
+                                <div class="flex items-center gap-3">
+                                    <label class="flex items-center gap-2 cursor-pointer">
+                                        <input type="hidden" name="skip_unmarked" value="0">
+                                        <input type="checkbox" name="skip_unmarked" value="1" x-model.boolean="skipUnmarked" class="w-4 h-4 text-teal-600 bg-slate-100 border-slate-300 rounded focus:ring-teal-500 dark:focus:ring-teal-500 dark:bg-slate-700 dark:border-slate-600">
+                                        <span class="text-sm text-slate-600 dark:text-slate-300">Allow submitting without marking all students</span>
+                                    </label>
+                                </div>
+                                <span class="text-xs text-slate-500 dark:text-slate-400" x-text="`${markedCount()} of ${students.length} students marked`"></span>
+                                <div class="flex gap-3">
+                                    <button type="button" @click="showBulkModal = false; skipUnmarked = false;" class="btn bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700">Cancel</button>
+                                    <button type="submit" class="btn btn-primary px-8" :disabled="!canSubmit()">Save Attendance</button>
+                                </div>
                             </div>
                         </form>
                     </div>
