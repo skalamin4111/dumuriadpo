@@ -39,7 +39,7 @@
             </div>
         </section>
 
-        <?php if($errors->any()): ?>
+        <?php if(isset($errors) && $errors->any()): ?>
             <div class="rounded-md border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700 dark:border-rose-900 dark:bg-rose-950 dark:text-rose-200">
                 <?php echo e($errors->first()); ?>
 
@@ -664,7 +664,7 @@
                                                         <td class="px-4 py-3 font-semibold text-teal-600 dark:text-teal-400" x-text="s.seat_number || 'N/A'"></td>
                                                         <td class="px-4 py-3 text-slate-600 dark:text-slate-400" x-text="s.admission_date ? new Date(s.admission_date).toLocaleDateString('en-GB') : '-'"></td>
                                                         <td class="px-4 py-3">
-                                                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-slate-100 text-slate-800" x-text="s.status.charAt(0).toUpperCase() + s.status.slice(1)"></span>
+                                                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-slate-100 text-slate-800" x-text="s.status ? (s.status.charAt(0).toUpperCase() + s.status.slice(1)) : ''"></span>
                                                         </td>
                                                     </tr>
                                                 </template>
@@ -841,7 +841,7 @@
                                                         <td class="px-4 py-3 font-medium text-slate-700 dark:text-slate-300" x-text="s.id"></td>
                                                         <td class="px-4 py-3">
                                                             <div class="flex items-center gap-2">
-                                                                <div class=" rounded-full bg-indigo-100 dark:bg-indigo-900/50 text-indigo-600 dark:text-indigo-400 flex items-center justify-center font-bold text-xs" style="width: 2rem; height: 2rem;" x-text="s.name.charAt(0)"></div>
+                                                                <div class=" rounded-full bg-indigo-100 dark:bg-indigo-900/50 text-indigo-600 dark:text-indigo-400 flex items-center justify-center font-bold text-xs" style="width: 2rem; height: 2rem;" x-text="s.name ? s.name.charAt(0) : ''"></div>
                                                                 <span class="font-semibold text-slate-800 dark:text-slate-200" x-text="s.name"></span>
                                                             </div>
                                                         </td>
@@ -855,7 +855,7 @@
                                                                       'bg-purple-100 text-purple-800': s.status === 'completed',
                                                                       'bg-slate-100 text-slate-800': s.status === 'dropped',
                                                                   }"
-                                                                  x-text="s.status.charAt(0).toUpperCase() + s.status.slice(1)">
+                                                                  x-text="s.status ? (s.status.charAt(0).toUpperCase() + s.status.slice(1)) : ''">
                                                             </span>
                                                         </td>
                                                     </tr>
@@ -949,7 +949,7 @@
                 fetch('<?php echo e(url('/services/computer-training/batches')); ?>/' + this.selectedBatchId + '/students?date=' + this.attendanceDate)
                     .then(res => res.json())
                     .then(data => {
-                        this.students = data.students.map(s => ({
+                        this.students = (data.students || []).map(s => ({
                             student_id: s.id,
                             seat_number: s.seat_number,
                             name: s.name,
@@ -965,6 +965,11 @@
                             advance_absence_note: s.advance_absence_note || ''
                         }));
                         this.loading = false;
+                    })
+                    .catch(() => {
+                        this.students = [];
+                        this.loading = false;
+                        this.validationError = 'Failed to load students for selected batch.';
                     });
             },
             openAdvanceAbsence(student) {
@@ -996,7 +1001,7 @@
                 if (!this.skipUnmarked && !this.allMarked()) {
                     e.preventDefault();
                     const unmarkedCount = this.students.length - this.markedCount();
-                    this.validationError = `Please mark attendance for all remaining students (${unmarkedCount} left), or check "Allow submitting without marking all students".`;
+                    this.validationError = `Please mark attendance for all remaining students (${unmarkedCount} left), or check 'Allow submitting without marking all students'.`;
                     return;
                 }
                 if (this.skipUnmarked && this.markedCount() === 0) {
@@ -1108,7 +1113,7 @@
                                                     </td>
                                                     <td class="px-4 py-3">
                                                         <div class="flex items-center gap-3">
-                                                            <div class="rounded-full bg-indigo-100 dark:bg-indigo-900/50 text-indigo-600 dark:text-indigo-400 flex items-center justify-center font-bold text-xs shrink-0" style="width: 2.25rem; height: 2.25rem;" x-text="s.name.charAt(0)"></div>
+                                                            <div class="rounded-full bg-indigo-100 dark:bg-indigo-900/50 text-indigo-600 dark:text-indigo-400 flex items-center justify-center font-bold text-xs shrink-0" style="width: 2.25rem; height: 2.25rem;" x-text="s.name ? s.name.charAt(0) : ''"></div>
                                                             <div>
                                                                 <span class="font-medium text-slate-800 dark:text-slate-200 block" x-text="s.name"></span>
                                                                 <div class="flex flex-wrap items-center gap-2 mt-1 text-xs text-slate-500 dark:text-slate-400">
@@ -1147,7 +1152,7 @@
                                                     </td>
                                                     <td class="px-4 py-3 text-center">
                                                         <label class="cursor-pointer group relative inline-flex items-center justify-center">
-                                                            <input type="radio" :name="`attendances[${index}][status]`" value="present" x-model="s.status" class="peer sr-only" :required="!skipUnmarked">
+                                                            <input type="radio" :name="`attendances[${index}][status]`" value="present" x-model="s.status" class="peer sr-only">
                                                             <div class="px-5 py-1.5 rounded-full border border-slate-200 dark:border-slate-700 bg-slate-100/50 dark:bg-slate-800 text-slate-400 dark:text-slate-500 font-semibold text-xs tracking-wide uppercase peer-checked:bg-green-500 peer-checked:border-green-500 peer-checked:text-white peer-checked:shadow-[0_0_12px_rgba(34,197,94,0.4)] hover:bg-slate-200 dark:hover:bg-slate-700 transition-all duration-300">
                                                                 Present
                                                             </div>
@@ -1155,7 +1160,7 @@
                                                     </td>
                                                     <td class="px-4 py-3 text-center">
                                                         <label class="cursor-pointer group relative inline-flex items-center justify-center">
-                                                            <input type="radio" :name="`attendances[${index}][status]`" value="absent" x-model="s.status" class="peer sr-only" :required="!skipUnmarked">
+                                                            <input type="radio" :name="`attendances[${index}][status]`" value="absent" x-model="s.status" class="peer sr-only">
                                                             <div class="px-5 py-1.5 rounded-full border border-slate-200 dark:border-slate-700 bg-slate-100/50 dark:bg-slate-800 text-slate-400 dark:text-slate-500 font-semibold text-xs tracking-wide uppercase peer-checked:bg-red-500 peer-checked:border-red-500 peer-checked:text-white peer-checked:shadow-[0_0_12px_rgba(239,68,68,0.4)] hover:bg-slate-200 dark:hover:bg-slate-700 transition-all duration-300">
                                                                 Absent
                                                             </div>
