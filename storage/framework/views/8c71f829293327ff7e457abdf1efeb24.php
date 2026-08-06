@@ -932,6 +932,7 @@
             students: [], 
             loading: false,
             skipUnmarked: false,
+            validationError: '',
             editAttendance: null,
             viewStudentAttendance: null,
             advanceAbsenceStudent: null,
@@ -939,6 +940,7 @@
             advanceAbsenceNotes: '',
             
             fetchStudents() {
+                this.validationError = '';
                 if(!this.selectedBatchId) {
                     this.students = [];
                     return;
@@ -983,12 +985,31 @@
                     return this.markedCount() > 0;
                 }
                 return this.allMarked();
+            },
+            handleBulkSubmit(e) {
+                this.validationError = '';
+                if (!this.selectedBatchId || this.students.length === 0 || this.loading) {
+                    e.preventDefault();
+                    this.validationError = 'Please select a batch with students first.';
+                    return;
+                }
+                if (!this.skipUnmarked && !this.allMarked()) {
+                    e.preventDefault();
+                    const unmarkedCount = this.students.length - this.markedCount();
+                    this.validationError = `Please mark attendance for all remaining students (${unmarkedCount} left), or check "Allow submitting without marking all students".`;
+                    return;
+                }
+                if (this.skipUnmarked && this.markedCount() === 0) {
+                    e.preventDefault();
+                    this.validationError = 'Please mark at least one student before saving.';
+                    return;
+                }
             }
         }">
             
             <div class="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-4">
                 <h2 class="text-lg font-bold text-slate-800 dark:text-slate-200">Daily Attendance History</h2>
-                <button type="button" @click="showBulkModal = true; selectedCourse = 'Diploma in Software Application'; selectedBatchId = ''; students = []; skipUnmarked = false;" class="btn btn-primary px-5 py-2.5">
+                <button type="button" @click="showBulkModal = true; selectedCourse = 'Diploma in Software Application'; selectedBatchId = ''; students = []; skipUnmarked = false; validationError = '';" class="btn btn-primary px-5 py-2.5">
                     <svg class="size-5 mr-2 inline-block" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                     Check Attendance
                 </button>
@@ -1010,8 +1031,20 @@
                             </button>
                         </div>
 
-                        <form method="POST" action="<?php echo e(route('computer-training.attendance.bulk')); ?>" class="flex flex-col overflow-hidden h-full">
+                        <form method="POST" action="<?php echo e(route('computer-training.attendance.bulk')); ?>" @submit="handleBulkSubmit($event)" class="flex flex-col overflow-hidden h-full">
                             <?php echo csrf_field(); ?>
+                            
+                            <template x-if="validationError">
+                                <div class="px-6 py-3 bg-rose-50 dark:bg-rose-500/10 border-b border-rose-200 dark:border-rose-500/30 flex items-center justify-between gap-3 text-xs font-semibold text-rose-600 dark:text-rose-400 shrink-0">
+                                    <div class="flex items-center gap-2">
+                                        <svg class="size-4 shrink-0 text-rose-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                                        <span x-text="validationError"></span>
+                                    </div>
+                                    <button type="button" @click="validationError = ''" class="text-rose-400 hover:text-rose-600 dark:hover:text-rose-300">
+                                        <svg class="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                                    </button>
+                                </div>
+                            </template>
                             
                             <div class="p-6 border-b border-slate-200 dark:border-slate-800 shrink-0 bg-white dark:bg-slate-900">
                                 <div class="flex flex-col sm:flex-row gap-4">
@@ -1114,7 +1147,7 @@
                                                     </td>
                                                     <td class="px-4 py-3 text-center">
                                                         <label class="cursor-pointer group relative inline-flex items-center justify-center">
-                                                            <input type="radio" :name="`attendances[${index}][status]`" value="present" x-model="s.status" class="peer sr-only" required>
+                                                            <input type="radio" :name="`attendances[${index}][status]`" value="present" x-model="s.status" class="peer sr-only" :required="!skipUnmarked">
                                                             <div class="px-5 py-1.5 rounded-full border border-slate-200 dark:border-slate-700 bg-slate-100/50 dark:bg-slate-800 text-slate-400 dark:text-slate-500 font-semibold text-xs tracking-wide uppercase peer-checked:bg-green-500 peer-checked:border-green-500 peer-checked:text-white peer-checked:shadow-[0_0_12px_rgba(34,197,94,0.4)] hover:bg-slate-200 dark:hover:bg-slate-700 transition-all duration-300">
                                                                 Present
                                                             </div>
@@ -1122,7 +1155,7 @@
                                                     </td>
                                                     <td class="px-4 py-3 text-center">
                                                         <label class="cursor-pointer group relative inline-flex items-center justify-center">
-                                                            <input type="radio" :name="`attendances[${index}][status]`" value="absent" x-model="s.status" class="peer sr-only" required>
+                                                            <input type="radio" :name="`attendances[${index}][status]`" value="absent" x-model="s.status" class="peer sr-only" :required="!skipUnmarked">
                                                             <div class="px-5 py-1.5 rounded-full border border-slate-200 dark:border-slate-700 bg-slate-100/50 dark:bg-slate-800 text-slate-400 dark:text-slate-500 font-semibold text-xs tracking-wide uppercase peer-checked:bg-red-500 peer-checked:border-red-500 peer-checked:text-white peer-checked:shadow-[0_0_12px_rgba(239,68,68,0.4)] hover:bg-slate-200 dark:hover:bg-slate-700 transition-all duration-300">
                                                                 Absent
                                                             </div>
@@ -1167,14 +1200,14 @@
                                 <div class="flex items-center gap-3">
                                     <label class="flex items-center gap-2 cursor-pointer">
                                         <input type="hidden" name="skip_unmarked" value="0">
-                                        <input type="checkbox" name="skip_unmarked" value="1" x-model.boolean="skipUnmarked" class="w-4 h-4 text-teal-600 bg-slate-100 border-slate-300 rounded focus:ring-teal-500 dark:focus:ring-teal-500 dark:bg-slate-700 dark:border-slate-600">
+                                        <input type="checkbox" name="skip_unmarked" value="1" x-model.boolean="skipUnmarked" @change="validationError = ''" class="w-4 h-4 text-teal-600 bg-slate-100 border-slate-300 rounded focus:ring-teal-500 dark:focus:ring-teal-500 dark:bg-slate-700 dark:border-slate-600">
                                         <span class="text-sm text-slate-600 dark:text-slate-300">Allow submitting without marking all students</span>
                                     </label>
                                 </div>
                                 <span class="text-xs text-slate-500 dark:text-slate-400" x-text="`${markedCount()} of ${students.length} students marked`"></span>
                                 <div class="flex gap-3">
-                                    <button type="button" @click="showBulkModal = false; skipUnmarked = false;" class="btn bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700">Cancel</button>
-                                    <button type="submit" class="btn btn-primary px-8" :disabled="!canSubmit()">Save Attendance</button>
+                                    <button type="button" @click="showBulkModal = false; skipUnmarked = false; validationError = '';" class="btn bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700">Cancel</button>
+                                    <button type="submit" class="btn btn-primary px-8" :disabled="loading || students.length === 0">Save Attendance</button>
                                 </div>
                             </div>
                         </form>
