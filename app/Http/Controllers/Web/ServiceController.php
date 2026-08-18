@@ -65,6 +65,29 @@ class ServiceController extends Controller
                     ->when(request('fee_status') === 'paid', fn ($q) => $q->whereColumn('paid_amount', '>=', 'amount')->orWhere('status', 'paid'))
                     ->when(request('fee_status') === 'due', fn ($q) => $q->whereColumn('paid_amount', '<', 'amount')->where('status', '!=', 'paid'))
                     ->latest('due_date')->paginate($perPage, ['*'], 'fee_page')->withQueryString(),
+                'studentFeeRecords' => ComputerTrainingStudent::with(['batch', 'fees'])
+                    ->when(request('fee_course'), fn($q, $v) => $q->where('course', $v))
+                    ->when(request('fee_batch'), fn($q, $v) => $q->where('batch_id', $v))
+                    ->when(request('fee_search'), function($q, $v) {
+                        $q->where(function($q2) use ($v) {
+                            $q2->where('name', 'like', "%{$v}%")
+                               ->orWhere('phone', 'like', "%{$v}%")
+                               ->orWhere('student_id', 'like', "%{$v}%");
+                        });
+                    })
+                    ->when(request('fee_status') === 'paid', function($q) {
+                        $q->whereDoesntHave('fees', function($q2) {
+                            $q2->whereColumn('paid_amount', '<', 'amount')->where('status', '!=', 'paid');
+                        });
+                    })
+                    ->when(request('fee_status') === 'due', function($q) {
+                        $q->whereHas('fees', function($q2) {
+                            $q2->whereColumn('paid_amount', '<', 'amount')->where('status', '!=', 'paid');
+                        });
+                    })
+                    ->orderBy('student_id')
+                    ->paginate($perPage, ['*'], 'fee_student_page')
+                    ->withQueryString(),
                 'leads' => ComputerTrainingMarketingLead::when(request('marketing_status'), fn ($q, $v) => $q->where('status', $v))
                     ->when(request('marketing_source'), fn ($q, $v) => $q->where('source', $v))
                     ->when(request('marketing_search'), fn ($q, $v) => $q->where(fn($q2) => $q2->where('name', 'like', "%{$v}%")->orWhere('phone', 'like', "%{$v}%")))

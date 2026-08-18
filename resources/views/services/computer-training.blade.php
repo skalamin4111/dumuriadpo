@@ -1765,17 +1765,41 @@
             <div class="mt-4">{{ $exams->appends(['tab' => 'exams'])->links() }}</div>
         </section>
 
-        <section x-show="tab === 'fees'" class="grid gap-5 xl:grid-cols-[24rem_1fr]" x-data="{ 
-            feeCourse: '', 
-            feeBatch: '', 
+        <section x-show="tab === 'fees'" class="grid gap-5 xl:grid-cols-[22rem_1fr]" x-data="{ 
+            feeCourse: '{{ request('fee_course') }}', 
+            feeBatch: '{{ request('fee_batch') }}', 
             feeStudent: '',
             totalAmount: '3000', 
-            paidAmount: '1000',
+            paidAmount: '3000',
             feeType: 'Admission',
-            status: 'partial',
+            status: 'paid',
             dueDate: '{{ now()->addMonth()->toDateString() }}',
             paidAtDate: '{{ now()->toDateString() }}',
+            feeViewMode: 'matrix',
             
+            showBulkFeeModal: false,
+            bulkCourse: '',
+            bulkBatchId: '',
+            bulkFeeType: 'Admission',
+            bulkPaymentDate: '{{ now()->toDateString() }}',
+            bulkPaymentMethod: 'Cash',
+            bulkRemarks: '',
+            bulkQuickAmount: '',
+            bulkSearch: '',
+            bulkStudents: [],
+            bulkLoading: false,
+            bulkError: '',
+
+            selectStudentForFee(studentId, course, batchId) {
+                this.feeCourse = course || '';
+                this.feeBatch = batchId || '';
+                this.feeStudent = studentId;
+                let formEl = document.querySelector("form[action*='fees.store']");
+                if (formEl) {
+                    formEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+            },
+
             updateStatus() {
                 let total = parseFloat(this.totalAmount) || 0;
                 let paid = parseFloat(this.paidAmount) || 0;
@@ -1786,79 +1810,422 @@
                 } else {
                     this.status = 'paid';
                 }
+            },
+
+            openBulkFeeModal() {
+                this.showBulkFeeModal = true;
+                this.bulkError = '';
+                this.fetchBulkFeeStudents();
+            },
+
+            closeBulkFeeModal() {
+                this.showBulkFeeModal = false;
+            },
+
+            fetchBulkFeeStudents() {
+                this.bulkLoading = true;
+                let url = '{{ route('computer-training.students-fees') }}?fee_type=' + encodeURIComponent(this.bulkFeeType) + '&batch_id=' + encodeURIComponent(this.bulkBatchId) + '&course=' + encodeURIComponent(this.bulkCourse);
+                fetch(url)
+                    .then(res => res.json())
+                    .then(data => {
+                        this.bulkStudents = (data.students || []).map(s => ({
+                            ...s,
+                            selected: s.due_amount > 0,
+                            collecting_amount: s.due_amount > 0 ? s.due_amount : 0
+                        }));
+                        this.bulkLoading = false;
+                    })
+                    .catch(err => {
+                        console.error(err);
+                        this.bulkLoading = false;
+                    });
+            },
+
+            toggleSelectAll(checked) {
+                this.bulkStudents.forEach(s => {
+                    s.selected = checked;
+                    if (checked && (!s.collecting_amount || parseFloat(s.collecting_amount) <= 0)) {
+                        s.collecting_amount = s.due_amount > 0 ? s.due_amount : 1000;
+                    }
+                });
+            },
+
+            applyQuickAmount() {
+                let amt = parseFloat(this.bulkQuickAmount);
+                if (isNaN(amt) || amt < 0) return;
+                this.bulkStudents.forEach(s => {
+                    if (s.selected) {
+                        s.collecting_amount = amt;
+                    }
+                });
+            },
+
+            setFullDueAmounts() {
+                this.bulkStudents.forEach(s => {
+                    if (s.selected) {
+                        s.collecting_amount = s.due_amount;
+                    }
+                });
+            },
+
+            selectedCount() {
+                return this.bulkStudents.filter(s => s.selected && parseFloat(s.collecting_amount) > 0).length;
+            },
+
+            totalBulkCollection() {
+                return this.bulkStudents.reduce((sum, s) => {
+                    if (s.selected && parseFloat(s.collecting_amount) > 0) {
+                        return sum + (parseFloat(s.collecting_amount) || 0);
+                    }
+                    return sum;
+                }, 0);
+            },
+
+            filteredBulkStudents() {
+                if (!this.bulkSearch) return this.bulkStudents;
+                let q = this.bulkSearch.toLowerCase();
+                return this.bulkStudents.filter(s => 
+                    (s.name && s.name.toLowerCase().includes(q)) || 
+                    (s.student_id && s.student_id.toLowerCase().includes(q)) || 
+                    (s.phone && s.phone.includes(q))
+                );
+            },
+
+            handleBulkFeeSubmit(e) {
+                this.bulkError = '';
+                let validList = this.bulkStudents.filter(s => s.selected && parseFloat(s.collecting_amount) > 0);
+                if (validList.length === 0) {
+                    e.preventDefault();
+                    this.bulkError = 'Please select at least one student with a collecting amount greater than 0.';
+                    return false;
+                }
+                return true;
             }
         }">
             <form method="POST" action="{{ route('computer-training.fees.store') }}" class="surface p-5">
                 @csrf
-                <h2 class="mb-4 font-semibold">Fee management</h2>
-                <div class="space-y-3">
-                    <select class="field" x-model="feeCourse" @change="feeStudent = ''">
-                        <option value="">All Courses</option>
-                        @foreach ($courses as $course)
-                            <option value="{{ $course }}">{{ $course }}</option>
-                        @endforeach
-                    </select>
+                <h2 class="mb-4 font-semibold text-slate-800 dark:text-slate-100 flex items-center gap-2">
+                    <svg class="size-5 text-teal-600 dark:text-teal-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                    Fee Collection
+                </h2>
+                <div class="space-y-3 text-xs">
+                    <div>
+                        <label class="block mb-1 text-slate-600 dark:text-slate-400 font-medium">Filter Course</label>
+                        <select class="field text-xs" x-model="feeCourse" @change="feeStudent = ''">
+                            <option value="">All Courses</option>
+                            @foreach ($courses as $course)
+                                <option value="{{ $course }}">{{ $course }}</option>
+                            @endforeach
+                        </select>
+                    </div>
 
-                    <select class="field" x-model="feeBatch" @change="feeStudent = ''">
-                        <option value="">All Batches</option>
-                        @foreach (\App\Models\ComputerTrainingBatch::orderBy('name')->get() as $b)
-                            <option value="{{ $b->id }}">{{ $b->name }}</option>
-                        @endforeach
-                    </select>
+                    <div>
+                        <label class="block mb-1 text-slate-600 dark:text-slate-400 font-medium">Filter Batch</label>
+                        <select class="field text-xs" x-model="feeBatch" @change="feeStudent = ''">
+                            <option value="">All Batches</option>
+                            @foreach (\App\Models\ComputerTrainingBatch::orderBy('name')->get() as $b)
+                                <option value="{{ $b->id }}">{{ $b->name }}</option>
+                            @endforeach
+                        </select>
+                    </div>
 
-                    <select class="field" name="student_id" x-model="feeStudent" required>
-                        <option value="">Select Student</option>
-                        <template x-for="student in {{ Js::from(\App\Models\ComputerTrainingStudent::select('id', 'name', 'course', 'batch_id')->get()) }}.filter(s => (!feeCourse || s.course === feeCourse) && (!feeBatch || s.batch_id == feeBatch))" :key="student.id">
-                            <option :value="student.id" x-text="student.name"></option>
-                        </template>
-                    </select>
+                    <div>
+                        <label class="block mb-1 text-slate-600 dark:text-slate-400 font-medium">Select Student *</label>
+                        <select class="field text-xs" name="student_id" x-model="feeStudent" required>
+                            <option value="">Select Student</option>
+                            <template x-for="student in {{ Js::from(\App\Models\ComputerTrainingStudent::select('id', 'name', 'course', 'batch_id')->get()) }}.filter(s => (!feeCourse || s.course === feeCourse) && (!feeBatch || s.batch_id == feeBatch))" :key="student.id">
+                                <option :value="student.id" x-text="student.name"></option>
+                            </template>
+                        </select>
+                    </div>
 
-                    <select class="field" name="fee_type" x-model="feeType" required>
-                        <option value="">Select Fee Type</option>
-                        <option value="Admission">Admission</option>
-                        <option value="Registration">Registration</option>
-                        <option value="Exam Fee">Exam Fee</option>
-                        <option value="Tour">Tour</option>
-                        <option value="Donation">Donation</option>
-                    </select>
+                    <div>
+                        <label class="block mb-1 text-slate-600 dark:text-slate-400 font-medium">Fee Type *</label>
+                        <select class="field text-xs" name="fee_type" x-model="feeType" required>
+                            <option value="">Select Fee Type</option>
+                            <option value="Admission">Admission Fee (ভর্তি ফি)</option>
+                            <option value="Registration">Registration Fee (রেজিস্ট্রেশন ফি)</option>
+                            <option value="Form Fillup">Form Fillup (ফর্ম ফিলাপ)</option>
+                            <option value="Exam Fee">Exam Fee (পরীক্ষা ফি)</option>
+                            <option value="Tour">Tour (ট্যুর)</option>
+                            <option value="Donation">Donation (অনুদান)</option>
+                        </select>
+                    </div>
 
                     <div class="grid grid-cols-2 gap-3">
-                        <input class="field" name="amount" type="number" step="0.01" min="0" placeholder="Total amount" x-model="totalAmount" @input="updateStatus()" required>
-                        <input class="field" name="paid_amount" type="number" step="0.01" min="0" placeholder="Paid amount" x-model="paidAmount" @input="updateStatus()">
+                        <div>
+                            <label class="block mb-1 text-slate-600 dark:text-slate-400 font-medium">Total Amount</label>
+                            <input class="field text-xs" name="amount" type="number" step="0.01" min="0" placeholder="Total amount" x-model="totalAmount" @input="updateStatus()" required>
+                        </div>
+                        <div>
+                            <label class="block mb-1 text-slate-600 dark:text-slate-400 font-medium">Paid Amount</label>
+                            <input class="field text-xs" name="paid_amount" type="number" step="0.01" min="0" placeholder="Paid amount" x-model="paidAmount" @input="updateStatus()">
+                        </div>
                     </div>
                     
-                    <div class="text-sm font-medium text-slate-700 dark:text-slate-300 py-1">
-                        Due: <span x-text="Math.max(0, (parseFloat(totalAmount) || 0) - (parseFloat(paidAmount) || 0)).toFixed(2)" class="text-red-500 font-bold"></span>
+                    <div class="text-xs font-medium text-slate-700 dark:text-slate-300 py-1 flex justify-between">
+                        <span>Calculated Due:</span>
+                        <span x-text="'৳ ' + Math.max(0, (parseFloat(totalAmount) || 0) - (parseFloat(paidAmount) || 0)).toFixed(2)" class="text-rose-600 font-bold"></span>
                     </div>
 
                     <div class="grid grid-cols-2 gap-3">
-                        <input class="field" name="due_date" type="date" x-model="dueDate" required title="Due Date">
-                        <input class="field" name="paid_at" type="date" x-model="paidAtDate" title="Paid At">
+                        <div>
+                            <label class="block mb-1 text-slate-600 dark:text-slate-400 font-medium">Due Date</label>
+                            <input class="field text-xs" name="due_date" type="date" x-model="dueDate" required title="Due Date">
+                        </div>
+                        <div>
+                            <label class="block mb-1 text-slate-600 dark:text-slate-400 font-medium">Paid Date</label>
+                            <input class="field text-xs" name="paid_at" type="date" x-model="paidAtDate" title="Paid At">
+                        </div>
                     </div>
                     
-                    <select class="field" name="status" x-model="status">
-                        <option value="due">Due</option>
-                        <option value="partial">Partial</option>
-                        <option value="paid">Paid</option>
-                        <option value="waived">Waived</option>
-                    </select>
+                    <div>
+                        <label class="block mb-1 text-slate-600 dark:text-slate-400 font-medium">Payment Status</label>
+                        <select class="field text-xs" name="status" x-model="status">
+                            <option value="due">Due</option>
+                            <option value="partial">Partial</option>
+                            <option value="paid">Paid</option>
+                            <option value="waived">Waived</option>
+                        </select>
+                    </div>
                     
-                    <input class="field" name="payment_method" placeholder="Payment method">
-                    <textarea class="field" name="remarks" placeholder="Remarks"></textarea>
-                    <button class="btn btn-primary w-full">Save fee</button>
+                    <input class="field text-xs" name="payment_method" placeholder="Payment method (e.g. Cash, Bkash)">
+                    <textarea class="field text-xs" name="remarks" placeholder="Remarks / Notes"></textarea>
+                    <button class="btn btn-primary w-full text-xs font-semibold py-2">Save Fee Record</button>
                 </div>
             </form>
-            <div class="flex flex-col gap-3">
-                <form method="GET" class="flex gap-3 items-center">
-                    <input type="hidden" name="tab" value="fees">
-                    <select class="field py-1" name="fee_status" onchange="this.form.submit()">
-                        <option value="">All Statuses</option>
-                        <option value="paid" {{ request('fee_status') === 'paid' ? 'selected' : '' }}>Paid</option>
-                        <option value="due" {{ request('fee_status') === 'due' ? 'selected' : '' }}>Due / Partial</option>
-                    </select>
-                </form>
-                
-                <div class="grid gap-3">
+
+            <div class="flex flex-col gap-4">
+                <!-- Header Filters & Actions -->
+                <div class="surface p-4 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+                    <form method="GET" class="flex flex-wrap items-center gap-2 flex-1">
+                        <input type="hidden" name="tab" value="fees">
+                        
+                        <div class="relative flex-1 min-w-[130px]">
+                            <input type="text" name="fee_search" value="{{ request('fee_search') }}" placeholder="Search name/ID/phone" class="field py-1.5 px-3 text-xs w-full">
+                        </div>
+                        
+                        <select name="fee_course" class="field py-1.5 px-3 text-xs w-auto" onchange="this.form.submit()">
+                            <option value="">All Courses</option>
+                            @foreach ($courses as $c)
+                                <option value="{{ $c }}" {{ request('fee_course') === $c ? 'selected' : '' }}>{{ $c }}</option>
+                            @endforeach
+                        </select>
+
+                        <select name="fee_batch" class="field py-1.5 px-3 text-xs w-auto" onchange="this.form.submit()">
+                            <option value="">All Batches</option>
+                            @foreach (\App\Models\ComputerTrainingBatch::orderBy('name')->get() as $b)
+                                <option value="{{ $b->id }}" {{ request('fee_batch') == $b->id ? 'selected' : '' }}>{{ $b->name }}</option>
+                            @endforeach
+                        </select>
+
+                        <select class="field py-1.5 px-3 text-xs w-auto" name="fee_status" onchange="this.form.submit()">
+                            <option value="">All Statuses</option>
+                            <option value="paid" {{ request('fee_status') === 'paid' ? 'selected' : '' }}>Fully Paid</option>
+                            <option value="due" {{ request('fee_status') === 'due' ? 'selected' : '' }}>Has Due</option>
+                        </select>
+                        
+                        <button type="submit" class="btn btn-secondary py-1.5 px-3 text-xs">Filter</button>
+                        @if(request('fee_search') || request('fee_course') || request('fee_batch') || request('fee_status'))
+                            <a href="{{ route('services.show', ['service' => 'computer-training', 'tab' => 'fees']) }}" class="text-xs text-rose-500 hover:underline">Clear</a>
+                        @endif
+                    </form>
+
+                    <div class="flex items-center gap-2 shrink-0">
+                        <div class="inline-flex rounded-lg p-0.5 bg-slate-100 dark:bg-slate-800">
+                            <button type="button" @click="feeViewMode = 'matrix'" :class="feeViewMode === 'matrix' ? 'bg-white dark:bg-slate-700 text-teal-600 dark:text-teal-300 shadow-sm' : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'" class="px-2.5 py-1 text-xs font-semibold rounded-md transition">
+                                Fee Matrix
+                            </button>
+                            <button type="button" @click="feeViewMode = 'transactions'" :class="feeViewMode === 'transactions' ? 'bg-white dark:bg-slate-700 text-teal-600 dark:text-teal-300 shadow-sm' : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'" class="px-2.5 py-1 text-xs font-semibold rounded-md transition">
+                                Transactions
+                            </button>
+                        </div>
+
+                        <button type="button" @click="openBulkFeeModal()" class="btn btn-primary bg-teal-600 hover:bg-teal-700 text-white font-semibold text-xs px-3.5 py-1.5 flex items-center gap-1.5 shadow-sm transition">
+                            <svg class="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" /></svg>
+                            Bulk Fee Collection
+                        </button>
+                    </div>
+                </div>
+
+                <!-- VIEW MODE 1: Student Fee Status Matrix Table -->
+                <div x-show="feeViewMode === 'matrix'" class="surface overflow-hidden">
+                    <div class="p-4 border-b border-slate-200 dark:border-slate-800 flex justify-between items-center bg-slate-50/50 dark:bg-slate-800/40">
+                        <div>
+                            <h3 class="font-bold text-slate-800 dark:text-slate-100 text-sm sm:text-base">Student Fee Status Overview (শিক্ষার্থী ফি স্ট্যাটাস)</h3>
+                            <p class="text-xs text-slate-500">Breakdown of Admission, Registration, Form Fillup & Exam Fees per student.</p>
+                        </div>
+                        <span class="text-xs font-semibold px-2.5 py-1 rounded-full bg-teal-100 text-teal-800 dark:bg-teal-900/50 dark:text-teal-300">
+                            Total Students: {{ $studentFeeRecords->total() }}
+                        </span>
+                    </div>
+
+                    @php
+                        $getFeeTypeStatus = function($student, $feeCategory) {
+                            $aliases = match($feeCategory) {
+                                'admission' => ['Admission', 'Admission Fee'],
+                                'registration' => ['Registration', 'Registration Fee'],
+                                'form_fillup' => ['Form Fillup', 'Form Fillup Fee', 'Form Fillup / Exam Fee'],
+                                'exam' => ['Exam Fee', 'Exam', 'Exam Fees'],
+                                default => [$feeCategory]
+                            };
+
+                            $fee = $student->fees->first(function($f) use ($aliases, $feeCategory) {
+                                if ($feeCategory === 'admission' && empty($f->fee_type)) return true;
+                                return in_array($f->fee_type, $aliases);
+                            });
+
+                            if (!$fee) {
+                                return [
+                                    'status' => 'not_set',
+                                    'label' => 'Not Set ⚪',
+                                    'badge' => 'bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400 border border-slate-200 dark:border-slate-700',
+                                    'amount' => 0,
+                                    'paid' => 0,
+                                    'due' => 0,
+                                ];
+                            }
+
+                            $paid = (float)$fee->paid_amount;
+                            $total = (float)$fee->amount;
+                            $due = max(0, $total - $paid);
+
+                            if ($fee->status === 'paid' || ($total > 0 && $paid >= $total)) {
+                                return [
+                                    'status' => 'paid',
+                                    'label' => 'Paid 🟢',
+                                    'badge' => 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700/50',
+                                    'amount' => $total,
+                                    'paid' => $paid,
+                                    'due' => 0,
+                                ];
+                            } elseif ($paid > 0 && $paid < $total) {
+                                return [
+                                    'status' => 'partial',
+                                    'label' => 'Partial 🟡',
+                                    'badge' => 'bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-300 dark:border-amber-700/50',
+                                    'amount' => $total,
+                                    'paid' => $paid,
+                                    'due' => $due,
+                                ];
+                            } else {
+                                return [
+                                    'status' => 'due',
+                                    'label' => 'Due 🔴',
+                                    'badge' => 'bg-rose-100 text-rose-800 dark:bg-rose-950/60 dark:text-rose-300 border border-rose-300 dark:border-rose-700/50',
+                                    'amount' => $total,
+                                    'paid' => $paid,
+                                    'due' => $due,
+                                ];
+                            }
+                        };
+                    @endphp
+
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-xs">
+                            <thead class="bg-slate-100 dark:bg-slate-800/80 uppercase text-[11px] font-semibold text-slate-600 dark:text-slate-300 tracking-wider">
+                                <tr>
+                                    <th class="p-3">Student Info</th>
+                                    <th class="p-3 text-center">Admission Fee (ভর্তি ফি)</th>
+                                    <th class="p-3 text-center">Registration Fee (রেজিস্ট্রেশন)</th>
+                                    <th class="p-3 text-center">Form Fillup (ফর্ম ফিলাপ)</th>
+                                    <th class="p-3 text-center">Exam Fees (পরীক্ষা ফি)</th>
+                                    <th class="p-3 text-right">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-200 dark:divide-slate-800">
+                                @forelse ($studentFeeRecords as $st)
+                                    @php
+                                        $admission = $getFeeTypeStatus($st, 'admission');
+                                        $registration = $getFeeTypeStatus($st, 'registration');
+                                        $formFillup = $getFeeTypeStatus($st, 'form_fillup');
+                                        $exam = $getFeeTypeStatus($st, 'exam');
+                                    @endphp
+                                    <tr class="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition">
+                                        <td class="p-3">
+                                            <div class="font-bold text-slate-900 dark:text-slate-100 text-sm">{{ $st->name }}</div>
+                                            <div class="text-xs text-slate-500 font-mono flex items-center gap-1.5 mt-0.5">
+                                                <span>ID: {{ $st->student_id ?? $st->id }}</span>
+                                                @if($st->batch)
+                                                    · <span class="text-teal-600 dark:text-teal-400 font-sans font-medium">{{ $st->batch->name }}</span>
+                                                @endif
+                                            </div>
+                                            @if($st->phone)
+                                                <div class="text-[11px] text-slate-400 font-mono mt-0.5">{{ $st->phone }}</div>
+                                            @endif
+                                        </td>
+
+                                        <!-- Admission Fee -->
+                                        <td class="p-3 text-center">
+                                            <span class="inline-block px-2.5 py-0.5 rounded-full text-[11px] font-semibold {{ $admission['badge'] }}">
+                                                {{ $admission['label'] }}
+                                            </span>
+                                            @if($admission['amount'] > 0)
+                                                <div class="text-[11px] text-slate-500 mt-1 font-mono">
+                                                    ৳ {{ number_format($admission['paid'], 0) }} / {{ number_format($admission['amount'], 0) }}
+                                                </div>
+                                            @endif
+                                        </td>
+
+                                        <!-- Registration Fee -->
+                                        <td class="p-3 text-center">
+                                            <span class="inline-block px-2.5 py-0.5 rounded-full text-[11px] font-semibold {{ $registration['badge'] }}">
+                                                {{ $registration['label'] }}
+                                            </span>
+                                            @if($registration['amount'] > 0)
+                                                <div class="text-[11px] text-slate-500 mt-1 font-mono">
+                                                    ৳ {{ number_format($registration['paid'], 0) }} / {{ number_format($registration['amount'], 0) }}
+                                                </div>
+                                            @endif
+                                        </td>
+
+                                        <!-- Form Fillup -->
+                                        <td class="p-3 text-center">
+                                            <span class="inline-block px-2.5 py-0.5 rounded-full text-[11px] font-semibold {{ $formFillup['badge'] }}">
+                                                {{ $formFillup['label'] }}
+                                            </span>
+                                            @if($formFillup['amount'] > 0)
+                                                <div class="text-[11px] text-slate-500 mt-1 font-mono">
+                                                    ৳ {{ number_format($formFillup['paid'], 0) }} / {{ number_format($formFillup['amount'], 0) }}
+                                                </div>
+                                            @endif
+                                        </td>
+
+                                        <!-- Exam Fees -->
+                                        <td class="p-3 text-center">
+                                            <span class="inline-block px-2.5 py-0.5 rounded-full text-[11px] font-semibold {{ $exam['badge'] }}">
+                                                {{ $exam['label'] }}
+                                            </span>
+                                            @if($exam['amount'] > 0)
+                                                <div class="text-[11px] text-slate-500 mt-1 font-mono">
+                                                    ৳ {{ number_format($exam['paid'], 0) }} / {{ number_format($exam['amount'], 0) }}
+                                                </div>
+                                            @endif
+                                        </td>
+
+                                        <td class="p-3 text-right">
+                                            <button type="button" @click="selectStudentForFee('{{ $st->id }}', '{{ addslashes($st->course) }}', '{{ $st->batch_id }}')" class="btn btn-secondary text-xs px-2.5 py-1 inline-flex items-center gap-1 hover:bg-teal-50 dark:hover:bg-teal-950/40 hover:text-teal-600 transition">
+                                                <svg class="size-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" /></svg>
+                                                Pay Fee
+                                            </button>
+                                        </td>
+                                    </tr>
+                                @empty
+                                    <tr>
+                                        <td colspan="6" class="p-8 text-center text-slate-500 text-sm">No student fee records found.</td>
+                                    </tr>
+                                @endforelse
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <div class="p-4 border-t border-slate-200 dark:border-slate-800">
+                        {{ $studentFeeRecords->appends(['tab' => 'fees', 'fee_course' => request('fee_course'), 'fee_batch' => request('fee_batch'), 'fee_status' => request('fee_status'), 'fee_search' => request('fee_search')])->links() }}
+                    </div>
+                </div>
+
+                <!-- VIEW MODE 2: Transactions Log -->
+                <div x-show="feeViewMode === 'transactions'" class="grid gap-3">
                     @forelse ($fees as $fee)
                         <article class="surface p-4">
                             <div class="flex justify-between gap-3">
@@ -1882,9 +2249,209 @@
                     @empty
                         <div class="surface p-5 text-center text-sm text-slate-500">No fee records.</div>
                     @endforelse
+                    <div class="mt-4">{{ $fees->appends(['tab' => 'fees', 'fee_status' => request('fee_status')])->links() }}</div>
                 </div>
-                <div class="mt-4">{{ $fees->appends(['tab' => 'fees', 'fee_status' => request('fee_status')])->links() }}</div>
             </div>
+
+            <!-- Bulk Fee Collection Modal -->
+            <template x-teleport="body">
+                <div x-show="showBulkFeeModal" 
+                     class="fixed inset-0 z-[100] overflow-y-auto bg-slate-950/60 backdrop-blur-sm flex items-start justify-center p-4 sm:p-6 md:py-8" 
+                     style="display:none"
+                     x-transition.opacity>
+                    
+                    <div class="w-full max-w-5xl bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 relative flex flex-col max-h-[90vh]" @click.away="closeBulkFeeModal()">
+                        
+                        <!-- Modal Header -->
+                        <div class="p-5 border-b border-slate-200 dark:border-slate-800 flex justify-between items-center bg-slate-50 dark:bg-slate-800/50 rounded-t-2xl shrink-0">
+                            <div>
+                                <h2 class="font-bold text-xl text-slate-800 dark:text-slate-100 flex items-center gap-2">
+                                    <svg class="size-6 text-teal-600 dark:text-teal-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" /></svg>
+                                    Bulk Fee Collection System (বাল্ক ফি কালেকশন)
+                                </h2>
+                                <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Collect fees from multiple students in a single batch transaction.</p>
+                            </div>
+                            <button type="button" @click="closeBulkFeeModal()" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition bg-white dark:bg-slate-800 rounded-full p-2 shadow-sm border border-slate-200 dark:border-slate-700">
+                                <svg class="size-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                            </button>
+                        </div>
+
+                        <form method="POST" action="{{ route('computer-training.fees.bulk') }}" @submit="handleBulkFeeSubmit($event)" class="flex flex-col overflow-hidden h-full">
+                            @csrf
+                            
+                            <!-- Error alert -->
+                            <template x-if="bulkError">
+                                <div class="px-6 py-3 bg-rose-50 dark:bg-rose-500/10 border-b border-rose-200 dark:border-rose-500/30 flex items-center justify-between gap-3 text-xs font-semibold text-rose-600 dark:text-rose-400 shrink-0">
+                                    <div class="flex items-center gap-2">
+                                        <svg class="size-4 shrink-0 text-rose-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                                        <span x-text="bulkError"></span>
+                                    </div>
+                                    <button type="button" @click="bulkError = ''" class="hover:underline">Dismiss</button>
+                                </div>
+                            </template>
+
+                            <!-- Filter Controls & Top Options -->
+                            <div class="p-5 bg-slate-50/70 dark:bg-slate-800/30 border-b border-slate-200 dark:border-slate-800 shrink-0 space-y-4">
+                                <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
+                                    <div>
+                                        <label class="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Course Filter</label>
+                                        <select class="field py-1.5 text-sm" x-model="bulkCourse" @change="fetchBulkFeeStudents()">
+                                            <option value="">All Courses</option>
+                                            @foreach ($courses as $c)
+                                                <option value="{{ $c }}">{{ $c }}</option>
+                                            @endforeach
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Batch Filter</label>
+                                        <select class="field py-1.5 text-sm" x-model="bulkBatchId" @change="fetchBulkFeeStudents()">
+                                            <option value="">All Batches</option>
+                                            @foreach (\App\Models\ComputerTrainingBatch::orderBy('name')->get() as $b)
+                                                <option value="{{ $b->id }}">{{ $b->name }}</option>
+                                            @endforeach
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Fee Type *</label>
+                                        <select class="field py-1.5 text-sm" name="fee_type" x-model="bulkFeeType" @change="fetchBulkFeeStudents()" required>
+                                            <option value="Admission">Admission</option>
+                                            <option value="Registration">Registration</option>
+                                            <option value="Exam Fee">Exam Fee</option>
+                                            <option value="Tour">Tour</option>
+                                            <option value="Donation">Donation</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Payment Date *</label>
+                                        <input class="field py-1.5 text-sm" type="date" name="payment_date" x-model="bulkPaymentDate" required>
+                                    </div>
+                                </div>
+
+                                <div class="grid grid-cols-1 sm:grid-cols-3 md:grid-cols-4 gap-3 pt-1 border-t border-slate-200/60 dark:border-slate-700/60">
+                                    <div>
+                                        <label class="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Payment Method</label>
+                                        <select class="field py-1.5 text-sm" name="payment_method" x-model="bulkPaymentMethod">
+                                            <option value="Cash">Cash (নগদ)</option>
+                                            <option value="bKash">bKash</option>
+                                            <option value="Nagad">Nagad</option>
+                                            <option value="Bank Transfer">Bank Transfer</option>
+                                            <option value="Postal Order">Postal Order</option>
+                                        </select>
+                                    </div>
+                                    <div class="sm:col-span-2">
+                                        <label class="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Batch Remarks / Ref</label>
+                                        <input class="field py-1.5 text-sm" name="remarks" x-model="bulkRemarks" placeholder="Optional remarks for this bulk collection transaction...">
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Quick Search</label>
+                                        <input class="field py-1.5 text-sm" type="text" x-model="bulkSearch" placeholder="Search student name/phone...">
+                                    </div>
+                                </div>
+
+                                <!-- Quick Batch Apply & Summary Bar -->
+                                <div class="flex flex-wrap items-center justify-between gap-3 pt-2 bg-white dark:bg-slate-900 p-3 rounded-xl border border-slate-200 dark:border-slate-800">
+                                    <div class="flex items-center gap-2">
+                                        <input type="number" step="100" min="0" x-model="bulkQuickAmount" placeholder="Amount (e.g. 1000)" class="field py-1 text-sm w-36">
+                                        <button type="button" @click="applyQuickAmount()" class="btn btn-secondary py-1 text-xs font-medium">Apply to Selected</button>
+                                        <button type="button" @click="setFullDueAmounts()" class="btn btn-secondary py-1 text-xs font-medium">Set Full Due</button>
+                                    </div>
+                                    
+                                    <div class="flex items-center gap-4 text-sm font-semibold">
+                                        <span class="text-slate-600 dark:text-slate-400">
+                                            Selected: <span class="text-teal-600 dark:text-teal-400 font-bold" x-text="selectedCount()"></span> / <span x-text="bulkStudents.length"></span>
+                                        </span>
+                                        <span class="text-slate-800 dark:text-slate-200 border-l border-slate-300 dark:border-slate-700 pl-4">
+                                            Total Collection: <span class="text-emerald-600 dark:text-emerald-400 text-lg font-extrabold" x-text="'৳ ' + totalBulkCollection().toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})"></span>
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Hidden inputs dynamically rendered for selected students -->
+                            <template x-for="(s, idx) in bulkStudents.filter(st => st.selected && parseFloat(st.collecting_amount) > 0)" :key="s.id">
+                                <div>
+                                    <input type="hidden" :name="'fees[' + idx + '][student_id]'" :value="s.id">
+                                    <input type="hidden" :name="'fees[' + idx + '][collecting_amount]'" :value="s.collecting_amount">
+                                    <input type="hidden" :name="'fees[' + idx + '][total_amount]'" :value="s.total_amount">
+                                </div>
+                            </template>
+
+                            <!-- Student List Area -->
+                            <div class="p-5 overflow-y-auto flex-1 min-h-[250px]">
+                                <div x-show="bulkLoading" class="py-12 text-center text-slate-500 dark:text-slate-400 flex flex-col items-center justify-center gap-2">
+                                    <svg class="animate-spin size-8 text-teal-600" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                                    <span class="text-sm font-medium">Loading student fee records...</span>
+                                </div>
+
+                                <div x-show="!bulkLoading && filteredBulkStudents().length === 0" class="py-12 text-center text-slate-500 dark:text-slate-400">
+                                    <p class="font-medium text-base">No students found for selected filters.</p>
+                                    <p class="text-xs text-slate-400 mt-1">Try changing course, batch or search query.</p>
+                                </div>
+
+                                <div x-show="!bulkLoading && filteredBulkStudents().length > 0" class="overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-800">
+                                    <table class="w-full text-left text-sm">
+                                        <thead class="bg-slate-100 dark:bg-slate-800/80 text-xs font-semibold uppercase text-slate-600 dark:text-slate-300">
+                                            <tr>
+                                                <th class="p-3 w-10 text-center">
+                                                    <input type="checkbox" @change="toggleSelectAll($event.target.checked)" class="rounded border-slate-300 text-teal-600 focus:ring-teal-500">
+                                                </th>
+                                                <th class="p-3">Student Name</th>
+                                                <th class="p-3">Phone</th>
+                                                <th class="p-3 text-right">Total Fee</th>
+                                                <th class="p-3 text-right">Already Paid</th>
+                                                <th class="p-3 text-right">Due Amount</th>
+                                                <th class="p-3 w-44">Collecting (৳)</th>
+                                                <th class="p-3 text-center">New Status</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody class="divide-y divide-slate-200 dark:divide-slate-800">
+                                            <template x-for="s in filteredBulkStudents()" :key="s.id">
+                                                <tr class="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition" :class="{'bg-teal-50/40 dark:bg-teal-950/20': s.selected}">
+                                                    <td class="p-3 text-center">
+                                                        <input type="checkbox" x-model="s.selected" class="rounded border-slate-300 text-teal-600 focus:ring-teal-500">
+                                                    </td>
+                                                    <td class="p-3">
+                                                        <div class="font-medium text-slate-900 dark:text-slate-100" x-text="s.name"></div>
+                                                        <div class="text-xs text-slate-400" x-text="'ID: ' + (s.student_id || s.id)"></div>
+                                                    </td>
+                                                    <td class="p-3 text-slate-600 dark:text-slate-400 font-mono text-xs" x-text="s.phone"></td>
+                                                    <td class="p-3 text-right font-medium text-slate-700 dark:text-slate-300" x-text="'৳ ' + s.total_amount.toFixed(2)"></td>
+                                                    <td class="p-3 text-right font-medium text-teal-600 dark:text-teal-400" x-text="'৳ ' + s.paid_amount.toFixed(2)"></td>
+                                                    <td class="p-3 text-right font-semibold text-rose-600 dark:text-rose-400" x-text="'৳ ' + s.due_amount.toFixed(2)"></td>
+                                                    <td class="p-3">
+                                                        <input type="number" step="0.01" min="0" x-model.number="s.collecting_amount" :disabled="!s.selected" class="field py-1 text-sm font-semibold w-full text-slate-900 dark:text-slate-100 disabled:opacity-40">
+                                                    </td>
+                                                    <td class="p-3 text-center">
+                                                        <template x-if="s.selected && (s.paid_amount + (parseFloat(s.collecting_amount) || 0)) >= s.total_amount">
+                                                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800 dark:bg-emerald-900/50 dark:text-emerald-300">Paid 🟢</span>
+                                                        </template>
+                                                        <template x-if="s.selected && (s.paid_amount + (parseFloat(s.collecting_amount) || 0)) < s.total_amount && (s.paid_amount + (parseFloat(s.collecting_amount) || 0)) > 0">
+                                                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-800 dark:bg-amber-900/50 dark:text-amber-300">Partial 🟡</span>
+                                                        </template>
+                                                        <template x-if="!s.selected || (s.paid_amount + (parseFloat(s.collecting_amount) || 0)) <= 0">
+                                                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-rose-100 text-rose-800 dark:bg-rose-900/50 dark:text-rose-300">Due 🔴</span>
+                                                        </template>
+                                                    </td>
+                                                </tr>
+                                            </template>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+
+                            <!-- Action Footer -->
+                            <div class="p-5 border-t border-slate-200 dark:border-slate-800 flex justify-between items-center bg-slate-50 dark:bg-slate-800/50 rounded-b-2xl shrink-0">
+                                <button type="button" @click="closeBulkFeeModal()" class="btn btn-secondary px-5 py-2">Cancel</button>
+
+                                <button type="submit" :disabled="selectedCount() === 0 || totalBulkCollection() <= 0" class="btn btn-primary bg-teal-600 hover:bg-teal-700 text-white font-semibold px-6 py-2 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
+                                    <svg class="size-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg>
+                                    <span>Save Bulk Fees (<span x-text="selectedCount()"></span> Students · ৳ <span x-text="totalBulkCollection().toFixed(2)"></span>)</span>
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </template>
         </section>
 
         <section x-show="tab === 'marketing'" class="grid gap-5">

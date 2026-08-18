@@ -1,5 +1,31 @@
+# Environment
 .env
+.env.*
+!.env.example
+
+# Dependencies
 /vendor
 /node_modules
+
+# Build artifacts
 /public/hot
+/public/build
 /public/storage
+
+# Laravel caches
+/bootstrap/cache/*.php
+!/bootstrap/cache/.gitkeep
+/storage/*.key
+
+# IDE / OS
+.idea
+.vscode
+.DS_Store
+Thumbs.db
+
+# Logs
+/storage/logs/*.log
+
+# Testing
+.phpunit.result.cache
+/coverage

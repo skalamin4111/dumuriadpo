@@ -47,7 +47,9 @@ Route::middleware(['auth', 'active', 'tenant'])->group(function () {
     Route::post('/services/computer-training/attendance', [ComputerTrainingController::class, 'storeAttendance'])->name('computer-training.attendance.store');
     Route::post('/services/computer-training/classes', [ComputerTrainingController::class, 'storeClassSchedule'])->name('computer-training.classes.store');
     Route::post('/services/computer-training/exams', [ComputerTrainingController::class, 'storeExam'])->name('computer-training.exams.store');
+    Route::get('/services/computer-training/students-fees', [ComputerTrainingController::class, 'getStudentsFees'])->name('computer-training.students-fees');
     Route::post('/services/computer-training/fees', [ComputerTrainingController::class, 'storeFee'])->name('computer-training.fees.store');
+    Route::post('/services/computer-training/fees/bulk', [ComputerTrainingController::class, 'storeBulkFees'])->name('computer-training.fees.bulk');
     Route::post('/services/computer-training/marketing', [ComputerTrainingController::class, 'storeMarketingLead'])->name('computer-training.marketing.store');
     Route::post('/services/computer-training/batches', [ComputerTrainingController::class, 'storeBatch'])->name('computer-training.batches.store');
     Route::put('/services/computer-training/batches/{batch}', [ComputerTrainingController::class, 'updateBatch'])->name('computer-training.batches.update');

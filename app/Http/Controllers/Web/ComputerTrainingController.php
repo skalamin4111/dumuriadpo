@@ -19,6 +19,7 @@ use App\Models\ComputerTrainingStudent;
 use App\Models\Reminder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\Rule;
@@ -533,6 +534,126 @@ class ComputerTrainingController extends Controller
         ComputerTrainingFee::create($this->withCompany($request, $data));
 
         return back()->with('status', 'Fee record saved.');
+    }
+
+    public function getStudentsFees(Request $request)
+    {
+        $companyId = $request->user()?->company_id;
+        $batchId = $request->input('batch_id');
+        $feeType = $request->input('fee_type', 'Admission');
+        $course = $request->input('course');
+
+        $query = ComputerTrainingStudent::query();
+        if ($companyId) {
+            $query->where('company_id', $companyId);
+        }
+
+        if ($batchId && $batchId !== 'all' && $batchId !== '') {
+            $query->where('batch_id', $batchId);
+        }
+
+        if ($course && $course !== 'all' && $course !== '') {
+            $query->where('course', $course);
+        }
+
+        $students = $query->with(['fees' => fn ($q) => $q->where('fee_type', $feeType)])
+            ->orderBy('name')
+            ->get()
+            ->map(function ($s) use ($feeType) {
+                $fee = $s->fees->first();
+                $totalAmount = $fee ? (float) $fee->amount : 3000.00;
+                $paidAmount = $fee ? (float) $fee->paid_amount : 0.00;
+                $dueAmount = max(0, $totalAmount - $paidAmount);
+
+                return [
+                    'id' => $s->id,
+                    'student_id' => $s->student_id ?? 'N/A',
+                    'name' => $s->name,
+                    'phone' => $s->phone ?? '-',
+                    'course' => $s->course,
+                    'existing_fee_id' => $fee?->id,
+                    'total_amount' => $totalAmount,
+                    'paid_amount' => $paidAmount,
+                    'due_amount' => $dueAmount,
+                    'collecting_amount' => $dueAmount,
+                    'selected' => $dueAmount > 0,
+                    'status' => $fee?->status ?? ($dueAmount > 0 ? 'due' : 'paid'),
+                ];
+            });
+
+        return response()->json(['students' => $students]);
+    }
+
+    public function storeBulkFees(Request $request): RedirectResponse
+    {
+        $data = $request->validate([
+            'fee_type' => ['required', 'string'],
+            'payment_date' => ['required', 'date'],
+            'payment_method' => ['nullable', 'string', 'max:255'],
+            'remarks' => ['nullable', 'string'],
+            'fees' => ['required', 'array', 'min:1'],
+            'fees.*.student_id' => ['required', 'exists:computer_training_students,id'],
+            'fees.*.collecting_amount' => ['required', 'numeric', 'min:0.01'],
+            'fees.*.total_amount' => ['nullable', 'numeric', 'min:0'],
+        ]);
+
+        $companyId = $request->user()?->company_id;
+        $count = 0;
+
+        DB::transaction(function () use ($data, $companyId, &$count) {
+            foreach ($data['fees'] as $item) {
+                $studentId = $item['student_id'];
+                $collecting = (float) $item['collecting_amount'];
+
+                if ($collecting <= 0) {
+                    continue;
+                }
+
+                $existingFee = ComputerTrainingFee::where('student_id', $studentId)
+                    ->where('fee_type', $data['fee_type'])
+                    ->latest()
+                    ->first();
+
+                if ($existingFee) {
+                    $newPaid = (float) $existingFee->paid_amount + $collecting;
+                    $totalAmount = (float) $existingFee->amount;
+                    $status = ($newPaid >= $totalAmount) ? 'paid' : (($newPaid > 0) ? 'partial' : 'due');
+
+                    $existingFee->update([
+                        'paid_amount' => $newPaid,
+                        'paid_at' => $data['payment_date'],
+                        'status' => $status,
+                        'payment_method' => $data['payment_method'] ?? $existingFee->payment_method,
+                        'remarks' => !empty($data['remarks'])
+                            ? trim(($existingFee->remarks ?? '') . "\nBulk Collection (" . $data['payment_date'] . "): " . $data['remarks'])
+                            : $existingFee->remarks,
+                    ]);
+                } else {
+                    $totalAmount = isset($item['total_amount']) && (float) $item['total_amount'] > 0
+                        ? (float) $item['total_amount']
+                        : 3000.00;
+
+                    $status = ($collecting >= $totalAmount) ? 'paid' : 'partial';
+
+                    ComputerTrainingFee::create([
+                        'company_id' => $companyId,
+                        'student_id' => $studentId,
+                        'fee_type' => $data['fee_type'],
+                        'amount' => $totalAmount,
+                        'paid_amount' => $collecting,
+                        'due_date' => $data['payment_date'],
+                        'paid_at' => $data['payment_date'],
+                        'status' => $status,
+                        'payment_method' => $data['payment_method'] ?? 'Cash',
+                        'remarks' => $data['remarks'] ?? null,
+                    ]);
+                }
+
+                $count++;
+            }
+        });
+
+        return back()->with('status', "Bulk fee collection successfully processed for {$count} student(s).")->with('tab', 'fees');
     }
 
     public function storeMarketingLead(Request $request): RedirectResponse

@@ -19,11 +19,14 @@ class ComputerTrainingStudent extends Model
         static::created(function ($student) {
             $student->fees()->create([
                 'company_id' => $student->company_id,
-                'fee_type' => 'Admission Fee',
+                'fee_type' => 'Admission',
                 'amount' => 3000,
-                'paid_amount' => 1000,
+                'paid_amount' => 3000,
                 'due_date' => $student->admission_date ?? now(),
-                'status' => 'partial',
+                'paid_at' => now(),
+                'status' => 'paid',
+                'payment_method' => 'Cash',
+                'remarks' => 'Initial Admission Fee (Paid)',
             ]);
         });
     }
