@@ -29,6 +29,10 @@ jobs:
             git pull origin main
 
             echo "📦 Installing PHP dependencies..."
+            if [ ! -f composer.phar ]; then
+                echo "⬇️ Downloading composer.phar..."
+                curl -sS https://getcomposer.org/installer | php
+            fi
             php composer.phar install --no-dev --optimize-autoloader --no-interaction
 
             echo "🧹 Clearing old caches first..."
