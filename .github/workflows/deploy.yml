@@ -33,7 +33,7 @@ jobs:
                 echo "⬇️ Downloading composer.phar..."
                 curl -sS https://getcomposer.org/installer | php
             fi
-            php composer.phar install --no-dev --optimize-autoloader --no-interaction
+            php composer.phar install --no-dev --optimize-autoloader --no-interaction --ignore-platform-reqs
 
             echo "🧹 Clearing old caches first..."
             php artisan config:clear
