@@ -29,7 +29,7 @@ jobs:
             git pull origin main
 
             echo "📦 Installing PHP dependencies..."
-            composer install --no-dev --optimize-autoloader --no-interaction
+            php composer.phar install --no-dev --optimize-autoloader --no-interaction
 
             echo "🧹 Clearing old caches first..."
             php artisan config:clear
