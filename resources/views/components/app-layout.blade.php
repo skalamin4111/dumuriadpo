@@ -20,7 +20,7 @@
                     <svg class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
                 </button>
             </div>
-            <nav x-data="{ servicesOpen: true }" x-bind:class="mobileMenuOpen ? 'block' : 'hidden lg:block'" class="space-y-1 px-3 pb-5">
+            <nav x-data="{ servicesOpen: true }" :class="mobileMenuOpen ? 'block' : 'hidden'" class="lg:!block space-y-1 px-3 pb-5">
                 @foreach ([
                     ['Dashboard', 'dashboard', 'dashboard', 'M4 13h6V4H4v9Zm0 7h6v-5H4v5Zm10 0h6v-9h-6v9Zm0-11h6V4h-6v5Z'],
                     ['Employees', 'employees.index', 'employees.*', 'M16 11c1.66 0 3-1.34 3-3S17.66 5 16 5s-3 1.34-3 3 1.34 3 3 3ZM8 11c1.66 0 3-1.34 3-3S9.66 5 8 5 5 6.34 5 8s1.34 3 3 3Zm0 2c-2.67 0-5 1.34-5 3v2h10v-2c0-1.66-2.33-3-5-3Zm8 0c-.32 0-.63.02-.94.07 1.18.85 1.94 1.95 1.94 3.18V18h4v-2c0-1.66-2.33-3-5-3Z'],
