@@ -9,7 +9,7 @@
 
 # Build artifacts
 /public/hot
-/public/build
+# /public/build
 /public/storage
 
 # Laravel caches
